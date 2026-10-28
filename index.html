@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#12151C">
-<meta name="app-version" content="1.0">
+<meta name="app-version" content="1.1">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Digest">
@@ -269,14 +269,42 @@
 <div class="toast" id="toast" role="status"></div>
 
 <script>
-const APP_VERSION = "1.0", APP_DATE = "18 Oct 2026";
+const APP_VERSION = "1.1", APP_DATE = "18 Oct 2026";
 const $ = id => document.getElementById(id);
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const lsGet = (k, d) => { try { const v = localStorage.getItem("dd_" + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } };
 const lsSet = (k, v) => { try { localStorage.setItem("dd_" + k, JSON.stringify(v)); return true; } catch (e) { return false; } };
 
 // ---------------- Settings ----------------
-const DEFAULT_PROMPT = `Send me a concise daily news briefing on the topics I care about most. Prioritise {topics}. Select up to {count} new developments. For each, provide a clear headline, a concise factual summary, and reliable source links; include images when available and useful. Write the sections directly and naturally. Do not use labels such as "What happened:", "Why it matters:", or similar question-style labels to divide each item. Avoid repeating unchanged stories, distinguish confirmed facts from speculation, and favour trustworthy primary sources and reputable reporting.`;
+const OLD_DEFAULT_PROMPT = `Send me a concise daily news briefing on the topics I care about most. Prioritise {topics}. Select up to {count} new developments. For each, provide a clear headline, a concise factual summary, and reliable source links; include images when available and useful. Write the sections directly and naturally. Do not use labels such as "What happened:", "Why it matters:", or similar question-style labels to divide each item. Avoid repeating unchanged stories, distinguish confirmed facts from speculation, and favour trustworthy primary sources and reputable reporting.`;
+const DEFAULT_PROMPT = `You are the editor of a daily news briefing for one busy, well-informed reader. Cover {topics}. Choose up to {count} developments that are genuinely new and significant, and write them up clearly and neutrally.
+
+Choosing stories
+- A story earns a place if it changes what is known, possible or decided, affects many people, or comes straight from a primary source.
+- Skip minor product tweaks, funding news without substance, opinion pieces, recycled coverage, press-release language and clickbait.
+- If fewer than {count} stories meet that bar, send fewer. Never pad.
+- Include a topic only when it has something that deserves a place. Avoid more than two stories on one topic unless the news is exceptional.
+- Prefer developments from the last 48 hours. If a story I have already seen has a significant update, include only what changed and say so plainly. Leave out stories that have not changed.
+
+Evidence and sources
+- State confirmed facts plainly. Attribute claims to whoever made them ("the company says", "according to registration data"). Mark rumours, leaks, preprints and forecasts as such inside the sentence.
+- For anything important, rely on a primary source (official announcement, paper, filing, regulator, publisher) or on at least two independent reputable outlets. When sources disagree, say so. When something is not yet known, say that in a sentence.
+- Rank sources: primary source first, then wire services and major newsrooms, then specialist trade press. Avoid aggregators, content farms and anonymous social posts, unless the post is itself the news.
+- Give numbers with their date, unit and comparison. Use exact dates instead of "yesterday" or "last week". Do not go beyond what the sources say.
+
+Writing
+- Headline: specific and plain, under 12 words, built around a verb. No questions, no hype, no clickbait.
+- Body: two short paragraphs. Open with the news and the key fact in the first sentence. Use the second paragraph for the context that makes it understandable, such as what it builds on, what is still unknown and what comes next, woven in naturally.
+- No labels, headings or question-style dividers inside an item, such as "What happened:" or "Why it matters:". No filler such as "in a major move" or "it's worth noting". No opinions or advice.
+- Define jargon once, in passing. Keep the tone calm and precise.
+
+Topic notes (apply only to topics I have selected)
+- AI: favour model releases with independent evaluation, safety and policy decisions, major research, and chips or infrastructure. Treat a company's own benchmark claims as claims.
+- Science: favour peer-reviewed findings. Say when a result is a preprint, and mention sample size or limits when they matter. Avoid calling a single study a breakthrough.
+- Tesla in Europe: favour official registration and sales figures, regulation and tariffs, factory news and competition, over commentary.
+- Science fiction books: favour major releases with dates, awards, adaptations and author news. Skip pure promotion.
+
+Pictures: use one only when it shows the story itself, such as a product, a chart or a book cover. Never use logos or stock images.`;
 const DEFAULT_TOPICS = [
   { id: "ai", label: "AI developments", desc: "significant AI developments (models, products, research, policy and safety)", color: "#4F46E5", on: true },
   { id: "science", label: "Science", desc: "science news (discoveries, space, health and medicine, climate, physics, biology)", color: "#0D9488", on: true },
@@ -290,6 +318,7 @@ const DEFAULTS = {
 };
 let S = Object.assign({}, DEFAULTS, lsGet("settings", {}));
 S.models = Object.assign({}, DEFAULTS.models, S.models || {});
+if (S.prompt === OLD_DEFAULT_PROMPT) S.prompt = DEFAULT_PROMPT;   // upgrade a prompt you never edited
 if (!Array.isArray(S.topics) || !S.topics.length) S.topics = DEFAULT_TOPICS.map(t => ({ ...t }));
 let KEYS = Object.assign({ gemini: "", openai: "" }, lsGet("keys", {}));
 let manageMode = false;
