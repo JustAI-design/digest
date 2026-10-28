@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#12151C">
+<meta name="app-version" content="1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Digest">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="apple-touch-icon" sizes="180x180" href="data:image/png;base64,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">
+<title>Daily Digest</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700;12..96,800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F6F7F9; --surface: #FFFFFF; --ink: #12151C; --muted: #5E6675; --line: #E2E5EB;
+    --btn: #12151C; --btn-ink: #FFFFFF; --accent: #4F46E5; --soft: #EDEFF4; --err: #C2261B; --ok: #138A5B; --warn: #B7791F;
+    --display: "Bricolage Grotesque", "Avenir Next", "Trebuchet MS", system-ui, sans-serif;
+    --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+    --ui: "Bricolage Grotesque", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0C0E13; --surface: #151922; --ink: #ECEFF5; --muted: #98A1B3; --line: #262C38;
+      --btn: #ECEFF5; --btn-ink: #0C0E13; --accent: #8B93FF; --soft: #1D222D; --err: #FF8A80; --ok: #4ADE9B; --warn: #F2B35A;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 17px/1.5 var(--ui); }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 22px 18px 64px; }
+  button { font: 600 16px/1 var(--ui); border: 0; border-radius: 14px; cursor: pointer; transition: transform .12s, opacity .12s, background .15s; }
+  button:active { transform: scale(.98); }
+  button:disabled { opacity: .5; cursor: default; }
+  :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .hidden { display: none !important; }
+
+  /* Masthead */
+  .top { display: flex; align-items: flex-end; justify-content: space-between; gap: 14px 20px; flex-wrap: wrap; margin: 6px 2px 22px; }
+  h1 { font: 800 clamp(36px, 8vw, 56px)/0.95 var(--display); letter-spacing: -0.035em; margin: 0; }
+  .date { margin: 8px 0 0; color: var(--muted); font-size: 16px; }
+  .ver { display: inline-block; margin-left: 10px; padding: 1px 9px; border: 1px solid var(--line); border-radius: 999px; font-size: 12px; vertical-align: 2px; }
+  .tabs { display: inline-flex; background: var(--soft); border-radius: 999px; padding: 4px; gap: 2px; }
+  .tabs button { background: transparent; color: var(--muted); padding: 10px 16px; border-radius: 999px; font-size: 15px; }
+  .tabs button.on { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+
+  .update { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; background: var(--accent); color: #fff;
+            border-radius: 14px; padding: 12px 16px; margin-bottom: 16px; font-weight: 500; }
+  .update button { background: #fff; color: #12151C; padding: 8px 16px; font-size: 14px; border-radius: 999px; }
+
+  /* Topics */
+  .label { font-size: 13px; color: var(--muted); font-weight: 600; margin: 0 0 8px 2px; letter-spacing: .01em; }
+  .topics { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .chip { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 999px; border: 1.5px solid var(--line);
+          background: var(--surface); color: var(--ink); font-weight: 600; font-size: 15px; min-height: 42px; }
+  .chip i { width: 9px; height: 9px; border-radius: 50%; background: var(--c); }
+  .chip.on { background: var(--c); border-color: var(--c); color: #fff; }
+  .chip.on i { background: #fff; }
+  .chip .x { margin-right: -6px; width: 22px; height: 22px; border-radius: 50%; background: rgba(0,0,0,.18); color: #fff; font-size: 14px; line-height: 1;
+             display: inline-flex; align-items: center; justify-content: center; padding: 0; min-height: 0; }
+  .chip:not(.on) .x { background: var(--soft); color: var(--ink); }
+  .chip.ghost { border-style: dashed; color: var(--muted); background: transparent; }
+  .linkbtn { background: none; color: var(--muted); padding: 8px 6px; font-size: 14px; border-radius: 8px; }
+  .addrow { display: flex; gap: 8px; margin-top: 10px; }
+  .addrow input { flex: 1; }
+  input[type=text], input[type=password], select, textarea {
+    width: 100%; font: 16px/1.4 var(--ui); color: var(--ink); background: var(--surface); border: 1.5px solid var(--line);
+    border-radius: 12px; padding: 12px 14px; }
+  textarea { min-height: 110px; resize: vertical; }
+
+  /* Controls */
+  .controls { margin: 22px 0 6px; display: grid; gap: 12px; }
+  .seg { display: grid; grid-template-columns: 1fr 1fr; background: var(--soft); border-radius: 14px; padding: 4px; gap: 4px; }
+  .seg button { background: transparent; color: var(--muted); padding: 12px; border-radius: 11px; font-size: 15px; }
+  .seg button.on { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+  .go { width: 100%; min-height: 60px; background: var(--btn); color: var(--btn-ink); font: 700 19px/1 var(--display); letter-spacing: -0.01em; border-radius: 18px; }
+  .sub { text-align: center; color: var(--muted); font-size: 14px; margin: 4px 0 0; }
+  .sub button { background: none; color: var(--muted); padding: 0; font-size: 14px; text-decoration: underline; text-underline-offset: 3px; }
+
+  /* Briefing */
+  #out { margin-top: 30px; }
+  .lede { font: 600 clamp(22px, 4.4vw, 28px)/1.3 var(--display); letter-spacing: -0.015em; margin: 0 0 12px; }
+  .meta-line { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; color: var(--muted); font-size: 14px; margin-bottom: 22px; }
+  .meta-line button { background: var(--soft); color: var(--ink); padding: 8px 14px; font-size: 14px; border-radius: 999px; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 24px; overflow: hidden; margin-bottom: 22px; }
+  .shot { margin: 0; aspect-ratio: 16 / 9; background: var(--soft); position: relative; overflow: hidden; }
+  .card:not(.hero) .shot { aspect-ratio: 2 / 1; }
+  .shot img { width: 100%; height: 100%; object-fit: cover; display: block; opacity: 0; transition: opacity .5s; }
+  .shot img.in { opacity: 1; }
+  .shot.load::after, .skel::after { content: ""; position: absolute; inset: 0; background: linear-gradient(100deg, transparent 20%, rgba(255,255,255,.35) 50%, transparent 80%);
+                                    animation: shimmer 1.4s infinite; transform: translateX(-100%); }
+  @media (prefers-color-scheme: dark) { .shot.load::after, .skel::after { background: linear-gradient(100deg, transparent 20%, rgba(255,255,255,.07) 50%, transparent 80%); } }
+  @keyframes shimmer { to { transform: translateX(100%); } }
+  .body { padding: 20px 22px 22px; }
+  .meta { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; margin-bottom: 10px; }
+  .tag { display: inline-block; padding: 4px 11px; border-radius: 999px; background: var(--cbg); color: var(--c); font-weight: 700; font-size: 13px; }
+  .cert { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); font-weight: 600; }
+  .cert i { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); }
+  .cert.reported i { background: var(--warn); }
+  .cert.unconfirmed i { background: transparent; border: 2px solid var(--err); }
+  h2 { font: 700 clamp(23px, 4.6vw, 28px)/1.15 var(--display); letter-spacing: -0.02em; margin: 0 0 12px; }
+  .card.hero h2 { font-size: clamp(27px, 5.6vw, 36px); letter-spacing: -0.025em; }
+  .prose { font: 400 18px/1.62 var(--serif); }
+  .prose p { margin: 0 0 12px; }
+  .prose p:last-child { margin-bottom: 0; }
+  .prose ul, .prose ol { margin: 0 0 12px; padding-left: 22px; }
+  .prose li { margin-bottom: 4px; }
+  .prose blockquote { margin: 0 0 12px; padding: 2px 0 2px 16px; border-left: 3px solid var(--line); color: var(--muted); }
+  .prose a { color: var(--accent); text-underline-offset: 2px; }
+  .srcs { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); }
+  .src { display: inline-flex; align-items: center; gap: 7px; padding: 6px 12px 6px 8px; border: 1px solid var(--line); border-radius: 999px;
+         color: var(--ink); text-decoration: none; font-size: 14px; font-weight: 600; }
+  .src img { width: 18px; height: 18px; border-radius: 4px; background: var(--soft); }
+  .src.unv { border-style: dashed; color: var(--muted); }
+  details.more { margin-top: 8px; color: var(--muted); font-size: 14px; }
+  details.more summary { cursor: pointer; padding: 8px 2px; font-weight: 600; }
+  details.more a { display: block; color: var(--accent); padding: 4px 2px; word-break: break-word; }
+
+  /* Skeleton, empty, notices */
+  .skel { position: relative; overflow: hidden; background: var(--soft); border-radius: 12px; }
+  .skelcard { background: var(--surface); border: 1px solid var(--line); border-radius: 24px; overflow: hidden; margin-bottom: 22px; }
+  .status { color: var(--muted); font-size: 15px; margin: 0 2px 16px; display: flex; align-items: center; gap: 10px; }
+  .status .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--accent); animation: pulse 1s infinite alternate; }
+  @keyframes pulse { from { opacity: .3; } to { opacity: 1; } }
+  .notice { background: var(--surface); border: 1px solid var(--line); border-radius: 24px; padding: 26px; text-align: left; }
+  .notice h3 { font: 700 22px/1.2 var(--display); margin: 0 0 8px; }
+  .notice p { margin: 0 0 16px; color: var(--muted); font-family: var(--serif); font-size: 18px; line-height: 1.55; }
+  .notice button, .btn { background: var(--btn); color: var(--btn-ink); padding: 14px 20px; border-radius: 14px; }
+  .btn.alt { background: transparent; color: var(--ink); border: 1.5px solid var(--line); }
+  .err { color: var(--err); }
+
+  /* History and settings */
+  .group { background: var(--surface); border: 1px solid var(--line); border-radius: 22px; padding: 20px; margin-bottom: 16px; }
+  .group h3 { font: 700 19px/1.2 var(--display); letter-spacing: -0.01em; margin: 0 0 4px; }
+  .group .hint { color: var(--muted); font-size: 14px; margin: 0 0 14px; }
+  .field { margin-top: 14px; }
+  .field > label { display: block; font-size: 13px; color: var(--muted); font-weight: 600; margin: 0 0 6px 2px; }
+  .row { display: flex; gap: 12px; flex-wrap: wrap; }
+  .row > * { flex: 1 1 200px; }
+  .check { display: flex; align-items: center; gap: 12px; margin-top: 14px; font-size: 16px; }
+  .check input { width: 22px; height: 22px; accent-color: var(--accent); flex: none; }
+  .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+  .actions .btn { flex: 1 1 150px; }
+  .hist { display: flex; gap: 14px; justify-content: space-between; align-items: flex-start; padding: 16px 0; border-top: 1px solid var(--line); }
+  .hist:first-child { border-top: 0; padding-top: 0; }
+  .hist .t { flex: 1; min-width: 0; }
+  .hist b { display: block; font: 700 17px/1.25 var(--display); }
+  .hist small { display: block; color: var(--muted); font-size: 14px; margin-top: 3px; line-height: 1.4; }
+  .hist .b { display: flex; gap: 8px; flex: none; }
+  .hist .b button { padding: 9px 14px; font-size: 14px; border-radius: 999px; background: var(--soft); color: var(--ink); }
+  .hist .b .open { background: var(--btn); color: var(--btn-ink); }
+  .toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translate(-50%, 20px); opacity: 0; pointer-events: none;
+           background: var(--btn); color: var(--btn-ink); padding: 12px 20px; border-radius: 999px; font-weight: 600; font-size: 15px; transition: .25s; z-index: 10; max-width: 90vw; text-align: center; }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+  details.adv summary { cursor: pointer; font-weight: 600; font-size: 15px; padding: 4px 0; }
+  @media (prefers-color-scheme: dark) { .tag { color: #C9CEFF; color: color-mix(in srgb, var(--c) 40%, #fff); } }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="update hidden" id="updateBar"><span>A newer version (<b id="newVer"></b>) is available.</span><button id="reloadBtn">Reload</button></div>
+
+  <header class="top">
+    <div>
+      <h1>Daily Digest</h1>
+      <p class="date"><span id="today"></span><span class="ver" id="ver"></span></p>
+    </div>
+    <nav class="tabs" aria-label="Sections">
+      <button data-view="brief" class="on">Briefing</button>
+      <button data-view="history">History</button>
+      <button data-view="settings">Settings</button>
+    </nav>
+  </header>
+
+  <!-- Briefing -->
+  <section id="view-brief">
+    <div class="label">Your topics</div>
+    <div class="topics" id="topics"></div>
+    <div class="addrow hidden" id="addRow">
+      <input type="text" id="newTopic" placeholder="Add a topic, for example Formula 1 or Portuguese politics" autocomplete="off">
+      <button class="btn" id="addTopicBtn">Add</button>
+    </div>
+
+    <div class="controls">
+      <div class="seg" id="providerSeg" role="group" aria-label="Model provider">
+        <button data-p="gemini">Gemini</button>
+        <button data-p="openai">OpenAI</button>
+      </div>
+      <button class="go" id="goBtn">Get my briefing</button>
+      <p class="sub"><span id="runInfo"></span> <button id="infoSettings">Change</button></p>
+    </div>
+
+    <div id="out"></div>
+  </section>
+
+  <!-- History -->
+  <section id="view-history" class="hidden">
+    <div class="group">
+      <h3>Past briefings</h3>
+      <p class="hint">The last 20 briefings are kept on this device. They help the digest avoid repeating stories.</p>
+      <div id="histList"></div>
+      <div class="actions"><button class="btn alt" id="clearHist">Clear history</button></div>
+    </div>
+  </section>
+
+  <!-- Settings -->
+  <section id="view-settings" class="hidden">
+    <div class="group">
+      <h3>Model</h3>
+      <p class="hint">Pick who writes your briefing. Both search the web for current news.</p>
+      <div class="seg" id="providerSeg2" role="group"><button data-p="gemini">Gemini</button><button data-p="openai">OpenAI</button></div>
+      <div class="field"><label for="keyGemini">Gemini API key</label><input type="password" id="keyGemini" placeholder="Paste your Google AI key" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
+      <div class="field"><label for="modelGemini">Gemini model</label><input type="text" id="modelGemini" list="gemList" autocomplete="off" autocapitalize="off" spellcheck="false"><datalist id="gemList"><option value="gemini-3.8-flash"></datalist></div>
+      <div class="field"><label for="keyOpenai">OpenAI API key</label><input type="password" id="keyOpenai" placeholder="Paste your OpenAI key" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
+      <div class="field"><label for="modelOpenai">OpenAI model</label><input type="text" id="modelOpenai" list="oaiList" autocomplete="off" autocapitalize="off" spellcheck="false"><datalist id="oaiList"><option value="gpt-5.6"><option value="gpt-5.5"><option value="gpt-6-astra"></datalist></div>
+      <label class="check"><input type="checkbox" id="remember"> Remember my API keys on this device</label>
+    </div>
+
+    <div class="group">
+      <h3>Briefing</h3>
+      <div class="row">
+        <div class="field"><label for="count">Stories</label><select id="count"></select></div>
+        <div class="field"><label for="language">Language</label>
+          <select id="language">
+            <option value="English">English</option><option value="European Portuguese (Portugal)">Português (Portugal)</option>
+            <option value="Spanish">Español</option><option value="French">Français</option><option value="German">Deutsch</option>
+            <option value="Italian">Italiano</option><option value="Dutch">Nederlands</option>
+          </select></div>
+      </div>
+      <label class="check"><input type="checkbox" id="images"> Show pictures when available</label>
+      <div class="field"><label for="trusted">Sources I trust (one per line, optional)</label>
+        <textarea id="trusted" placeholder="https://www.nature.com&#10;https://electrek.co&#10;Reuters"></textarea></div>
+      <div class="field"><label for="extra">Extra instructions (optional)</label>
+        <textarea id="extra" placeholder="For example: keep it light, skip funding rounds, mention release dates."></textarea></div>
+      <details class="adv field"><summary>Edit the main prompt</summary>
+        <p class="hint" style="margin-top:8px">Use {topics} and {count} where you want your selected topics and story limit to appear.</p>
+        <textarea id="prompt" style="min-height:220px"></textarea>
+        <div class="actions"><button class="btn alt" id="resetPrompt">Reset to the default prompt</button></div>
+      </details>
+    </div>
+
+    <div class="group">
+      <h3>Save and move</h3>
+      <p class="hint">Settings save automatically on this device. Export a copy to move them to another device.</p>
+      <label class="check"><input type="checkbox" id="exportKeys"> Include API keys in the export</label>
+      <div class="actions">
+        <button class="btn" id="saveBtn">Save settings</button>
+        <button class="btn alt" id="exportBtn">Export</button>
+        <button class="btn alt" id="importBtn">Import</button>
+      </div>
+      <input type="file" id="importFile" accept=".json,application/json" class="hidden">
+    </div>
+
+    <div class="group">
+      <h3>About</h3>
+      <p class="hint" style="margin:0" id="verLine"></p>
+      <div class="actions"><button class="btn alt" id="verBtn">Check for updates</button></div>
+      <p class="hint" style="margin:10px 0 0" id="verMsg"></p>
+    </div>
+  </section>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+const APP_VERSION = "1.0", APP_DATE = "18 Oct 2026";
+const $ = id => document.getElementById(id);
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const lsGet = (k, d) => { try { const v = localStorage.getItem("dd_" + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } };
+const lsSet = (k, v) => { try { localStorage.setItem("dd_" + k, JSON.stringify(v)); return true; } catch (e) { return false; } };
+
+// ---------------- Settings ----------------
+const DEFAULT_PROMPT = `Send me a concise daily news briefing on the topics I care about most. Prioritise {topics}. Select up to {count} new developments. For each, provide a clear headline, a concise factual summary, and reliable source links; include images when available and useful. Write the sections directly and naturally. Do not use labels such as "What happened:", "Why it matters:", or similar question-style labels to divide each item. Avoid repeating unchanged stories, distinguish confirmed facts from speculation, and favour trustworthy primary sources and reputable reporting.`;
+const DEFAULT_TOPICS = [
+  { id: "ai", label: "AI developments", desc: "significant AI developments (models, products, research, policy and safety)", color: "#4F46E5", on: true },
+  { id: "science", label: "Science", desc: "science news (discoveries, space, health and medicine, climate, physics, biology)", color: "#0D9488", on: true },
+  { id: "tesla", label: "Tesla in Europe", desc: "Tesla in Europe (sales and registrations, regulation, factories, competition)", color: "#DC2626", on: true },
+  { id: "scifi", label: "Science fiction books", desc: "notable science fiction book news (major releases, awards, adaptations, authors)", color: "#9333EA", on: true }
+];
+const PALETTE = ["#D97706", "#0284C7", "#059669", "#E11D48", "#7C3AED", "#0891B2", "#65A30D", "#C026D3"];
+const DEFAULTS = {
+  provider: "gemini", models: { gemini: "gemini-3.8-flash", openai: "gpt-5.6" }, count: 5, language: "English",
+  images: true, trusted: "", extra: "", prompt: DEFAULT_PROMPT, remember: true, topics: DEFAULT_TOPICS
+};
+let S = Object.assign({}, DEFAULTS, lsGet("settings", {}));
+S.models = Object.assign({}, DEFAULTS.models, S.models || {});
+if (!Array.isArray(S.topics) || !S.topics.length) S.topics = DEFAULT_TOPICS.map(t => ({ ...t }));
+let KEYS = Object.assign({ gemini: "", openai: "" }, lsGet("keys", {}));
+let manageMode = false;
+
+function persist(toastMsg) {
+  lsSet("settings", S);
+  if (S.remember) lsSet("keys", KEYS); else { try { localStorage.removeItem("dd_keys"); } catch (e) {} }
+  if (toastMsg) toast(toastMsg);
+}
+let toastTimer;
+function toast(msg) {
+  const t = $("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove("show"), 2200);
+}
+const hexRgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+const tint = (h, a) => { const [r, g, b] = hexRgb(h); return `rgba(${r},${g},${b},${a})`; };
+
+// ---------------- Views ----------------
+function showView(v) {
+  if (!$("view-settings").classList.contains("hidden") && v !== "settings") { readForm(); persist(); syncProvider(); }
+  ["brief", "history", "settings"].forEach(x => $("view-" + x).classList.toggle("hidden", x !== v));
+  document.querySelectorAll(".tabs button").forEach(b => b.classList.toggle("on", b.dataset.view === v));
+  if (v === "history") renderHistory();
+  window.scrollTo({ top: 0 });
+}
+document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => showView(b.dataset.view));
+$("infoSettings").onclick = () => showView("settings");
+
+// ---------------- Topics ----------------
+function renderTopics() {
+  const box = $("topics");
+  box.innerHTML = "";
+  S.topics.forEach(t => {
+    const b = document.createElement("button");
+    b.className = "chip" + (t.on ? " on" : "");
+    b.style.setProperty("--c", t.color);
+    const dot = document.createElement("i");
+    b.append(dot, document.createTextNode(t.label));
+    b.onclick = () => { if (manageMode) return; t.on = !t.on; persist(); renderTopics(); };
+    if (manageMode) {
+      const x = document.createElement("span");
+      x.className = "x"; x.textContent = "\u00d7"; x.setAttribute("aria-label", "Remove " + t.label);
+      x.onclick = e => { e.stopPropagation(); S.topics = S.topics.filter(y => y !== t); persist(); renderTopics(); };
+      b.appendChild(x);
+    }
+    box.appendChild(b);
+  });
+  const add = document.createElement("button");
+  add.className = "chip ghost"; add.textContent = "+ Topic";
+  add.onclick = () => { $("addRow").classList.toggle("hidden"); $("newTopic").focus(); };
+  box.appendChild(add);
+  const mg = document.createElement("button");
+  mg.className = "linkbtn"; mg.textContent = manageMode ? "Done" : "Edit";
+  mg.onclick = () => { manageMode = !manageMode; renderTopics(); };
+  box.appendChild(mg);
+}
+function addTopic() {
+  const label = $("newTopic").value.trim();
+  if (!label) return;
+  if (S.topics.some(t => t.label.toLowerCase() === label.toLowerCase())) { toast("That topic is already in your list"); return; }
+  const color = PALETTE[S.topics.filter(t => !DEFAULT_TOPICS.some(d => d.id === t.id)).length % PALETTE.length];
+  S.topics.push({ id: "c" + Date.now(), label, desc: label, color, on: true });
+  $("newTopic").value = "";
+  $("addRow").classList.add("hidden");
+  persist(); renderTopics();
+}
+$("addTopicBtn").onclick = addTopic;
+$("newTopic").addEventListener("keydown", e => { if (e.key === "Enter") addTopic(); });
+
+// ---------------- Provider switch ----------------
+function syncProvider() {
+  document.querySelectorAll("#providerSeg button, #providerSeg2 button").forEach(b => b.classList.toggle("on", b.dataset.p === S.provider));
+  const name = S.provider === "gemini" ? "Gemini" : "OpenAI";
+  $("runInfo").textContent = name + ", " + S.models[S.provider] + ", up to " + S.count + " stories.";
+}
+document.querySelectorAll("#providerSeg button, #providerSeg2 button").forEach(b => b.onclick = () => { S.provider = b.dataset.p; persist(); syncProvider(); });
+
+// ---------------- Settings form ----------------
+const COUNTS = [3, 4, 5, 6, 8];
+$("count").innerHTML = COUNTS.map(n => `<option value="${n}">Up to ${n}</option>`).join("");
+function loadForm() {
+  $("keyGemini").value = KEYS.gemini; $("keyOpenai").value = KEYS.openai;
+  $("modelGemini").value = S.models.gemini; $("modelOpenai").value = S.models.openai;
+  $("count").value = String(S.count); $("language").value = S.language;
+  $("images").checked = S.images; $("remember").checked = S.remember;
+  $("trusted").value = S.trusted; $("extra").value = S.extra; $("prompt").value = S.prompt;
+}
+function readForm() {
+  KEYS.gemini = $("keyGemini").value.trim(); KEYS.openai = $("keyOpenai").value.trim();
+  S.models.gemini = $("modelGemini").value.trim() || DEFAULTS.models.gemini;
+  S.models.openai = $("modelOpenai").value.trim() || DEFAULTS.models.openai;
+  S.count = parseInt($("count").value, 10) || 5; S.language = $("language").value;
+  S.images = $("images").checked; S.remember = $("remember").checked;
+  S.trusted = $("trusted").value; S.extra = $("extra").value;
+  S.prompt = $("prompt").value.trim() || DEFAULT_PROMPT;
+}
+["keyGemini", "keyOpenai", "modelGemini", "modelOpenai", "count", "language", "images", "remember", "trusted", "extra", "prompt"].forEach(id =>
+  $(id).addEventListener("change", () => { readForm(); persist(); syncProvider(); }));
+$("saveBtn").onclick = () => { readForm(); persist("Settings saved on this device"); syncProvider(); };
+$("resetPrompt").onclick = () => { $("prompt").value = DEFAULT_PROMPT; readForm(); persist("Prompt reset"); };
+$("exportBtn").onclick = async () => {
+  readForm();
+  const data = { app: "Daily Digest", version: APP_VERSION, settings: S };
+  if ($("exportKeys").checked) data.keys = KEYS;
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  const name = "daily-digest-settings.json", file = new File([blob], name, { type: "application/json" });
+  try { if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: name }); return; } }
+  catch (e) { if (e && e.name === "AbortError") return; }
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove();
+};
+$("importBtn").onclick = () => $("importFile").click();
+$("importFile").onchange = async () => {
+  const f = $("importFile").files[0]; $("importFile").value = "";
+  if (!f) return;
+  try {
+    const d = JSON.parse(await f.text());
+    if (d.app !== "Daily Digest" || !d.settings) throw new Error("Not a Daily Digest settings file");
+    S = Object.assign({}, DEFAULTS, d.settings); S.models = Object.assign({}, DEFAULTS.models, S.models || {});
+    if (d.keys) KEYS = Object.assign(KEYS, d.keys);
+    persist("Settings imported"); loadForm(); renderTopics(); syncProvider();
+  } catch (e) { toast("Could not import: " + e.message); }
+};
+
+// ---------------- Prompt ----------------
+const hostOf = u => { try { return new URL(u).hostname.replace(/^www\./, "").toLowerCase(); } catch (e) { return ""; } };
+function dateLong() { return new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" }); }
+function recentHeadlines() {
+  const cutoff = Date.now() - 10 * 864e5, out = [];
+  lsGet("history", []).filter(b => b.t >= cutoff).forEach(b => b.items.forEach(i => out.push(i.headline)));
+  return out.slice(0, 40);
+}
+function buildPrompt(active) {
+  const topicsText = active.map(t => t.desc || t.label).join("; ");
+  let base = S.prompt.split("{topics}").join(topicsText).split("{count}").join(String(S.count));
+  if (!S.prompt.includes("{topics}")) base += "\nTopics: " + topicsText + ".";
+  if (!S.prompt.includes("{count}")) base += "\nUse at most " + S.count + " items.";
+  const hist = recentHeadlines();
+  const labels = active.map(t => '"' + t.label + '"').join(", ");
+  return `${base}
+
+Today is ${dateLong()}. Focus on developments from the last 48 hours. If a topic has nothing significant in that window, skip it rather than padding. Use web search, and only report real stories you found.
+${S.trusted.trim() ? "\nSources the reader trusts (prefer them when they cover the story):\n" + S.trusted.trim() + "\n" : ""}${S.extra.trim() ? "\nExtra instructions from the reader: " + S.extra.trim() + "\n" : ""}${hist.length ? "\nAlready covered in recent briefings (do not repeat these unless there is a significant new development, and then say plainly what has changed):\n" + hist.map(h => "- " + h).join("\n") + "\n" : ""}
+Write in ${S.language}.
+
+Return ONLY a JSON object, with no markdown fences and no text before or after it, in exactly this shape:
+{
+  "lede": "One or two natural sentences that sum up the day.",
+  "items": [
+    {
+      "topic": "exactly one of: ${labels}",
+      "headline": "A clear, specific headline",
+      "certainty": "confirmed" or "reported" or "unconfirmed",
+      "body_html": "Two short paragraphs, about 70 to 120 words in total, as HTML using only <p>, <strong>, <em>, <ul>, <li> and <blockquote>",
+      "sources": [ { "name": "Publisher name", "url": "https://..." } ],
+      "image_url": "A direct image URL (jpg, png or webp) that you saw for this story, or null"
+    }
+  ]
+}
+Rules for the items:
+- Write the body directly and naturally. No labels or headings inside the body, and no question-style dividers.
+- State confirmed facts plainly. Flag rumours, leaks and speculation in the sentence itself ("reportedly", "unconfirmed", "analysts speculate"), and set "certainty" to match: "confirmed" for verified facts, "reported" for credible reporting not officially confirmed, "unconfirmed" for rumour or speculation.
+- Give one to three sources per item. Prefer primary sources (official announcements, papers, company posts), then reputable outlets. Use only URLs that appeared in your search results. Never guess or invent a URL.
+- Use "image_url" only if you actually saw a direct image link for that story. Otherwise use null.
+- Spread the items across the topics, but significance comes first.`;
+}
+
+// ---------------- Model calls ----------------
+async function postJson(url, headers, body, label) {
+  let last;
+  for (let i = 0; i < 3; i++) {
+    try {
+      const res = await fetch(url, { method: "POST", headers: Object.assign({ "Content-Type": "application/json" }, headers), body: JSON.stringify(body) });
+      if (res.ok) return res.json();
+      const txt = await res.text();
+      let msg = txt.slice(0, 300);
+      try { const j = JSON.parse(txt); msg = (j.error && (j.error.message || j.error)) || msg; } catch (e) {}
+      last = new Error(label + " replied " + res.status + ": " + msg);
+      if (res.status !== 429 && res.status < 500) break;
+    } catch (e) {
+      last = new Error("Could not reach " + label + " (" + (e.message || e) + "). Check your connection and that this page is opened from its web address.");
+    }
+    await sleep(1500 * (i + 1));
+  }
+  throw last;
+}
+async function callGemini(prompt) {
+  const key = KEYS.gemini;
+  const data = await postJson("https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(S.models.gemini) + ":generateContent",
+    { "x-goog-api-key": key },
+    { contents: [{ role: "user", parts: [{ text: prompt }] }], tools: [{ google_search: {} }], generationConfig: { maxOutputTokens: 16000 } }, "Google");
+  const c = data.candidates && data.candidates[0];
+  const text = ((c && c.content && c.content.parts) || []).filter(p => !p.thought).map(p => p.text || "").join("").trim();
+  const cites = [];
+  ((c && c.groundingMetadata && c.groundingMetadata.groundingChunks) || []).forEach(g => {
+    if (g.web && g.web.uri) cites.push({ url: g.web.uri, title: g.web.title || "", host: /^[a-z0-9.-]+\.[a-z]{2,}$/i.test(g.web.title || "") ? g.web.title.replace(/^www\./, "").toLowerCase() : "" });
+  });
+  if (!text) throw new Error("Gemini returned no text" + (c && c.finishReason ? " (finish reason: " + c.finishReason + ")" : "") + ".");
+  return { text, cites };
+}
+async function callOpenAI(prompt) {
+  const data = await postJson("https://api.openai.com/v1/responses", { Authorization: "Bearer " + KEYS.openai },
+    { model: S.models.openai, input: prompt, tools: [{ type: "web_search" }], max_output_tokens: 16000 }, "OpenAI");
+  let text = "";
+  const cites = [];
+  (data.output || []).forEach(o => {
+    if (o.type !== "message") return;
+    (o.content || []).forEach(p => {
+      if (p.type === "output_text") {
+        text += p.text || "";
+        (p.annotations || []).forEach(a => {
+          if (a.type === "url_citation" && a.url) {
+            const url = a.url.replace(/([?&])utm_source=openai(&|$)/, "$1").replace(/[?&]$/, "");
+            cites.push({ url, title: a.title || "", host: hostOf(url) });
+          }
+        });
+      }
+    });
+  });
+  if (!text) throw new Error("OpenAI returned no text" + (data.incomplete_details ? " (" + data.incomplete_details.reason + ")" : "") + ".");
+  return { text: text.trim(), cites };
+}
+function parseBrief(text) {
+  const t = text.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/, "");
+  const a = t.indexOf("{"), b = t.lastIndexOf("}");
+  if (a < 0 || b <= a) throw new Error("The model did not return a briefing.");
+  const obj = JSON.parse(t.slice(a, b + 1));
+  if (!obj || !Array.isArray(obj.items)) throw new Error("The briefing had no stories.");
+  return obj;
+}
+
+// ---------------- Normalising and cleaning ----------------
+const ALLOWED = new Set(["P", "STRONG", "EM", "B", "I", "UL", "OL", "LI", "BLOCKQUOTE", "BR", "A", "CODE"]);
+const DROP = new Set(["SCRIPT", "STYLE", "IFRAME", "OBJECT", "EMBED", "NOSCRIPT", "TEMPLATE"]);
+function sanitize(html) {
+  let src = String(html || "");
+  if (!/<\/?[a-z][\s\S]*>/i.test(src)) src = src.split(/\n\s*\n/).map(p => "<p>" + p.replace(/</g, "&lt;") + "</p>").join("");
+  const doc = new DOMParser().parseFromString("<body>" + src + "</body>", "text/html");
+  const out = document.createDocumentFragment();
+  (function walk(from, to) {
+    from.childNodes.forEach(n => {
+      if (n.nodeType === 3) { to.appendChild(document.createTextNode(n.textContent)); return; }
+      if (n.nodeType !== 1) return;
+      if (DROP.has(n.tagName)) return;
+      if (!ALLOWED.has(n.tagName)) { walk(n, to); return; }
+      const el = document.createElement(n.tagName.toLowerCase());
+      if (n.tagName === "A") {
+        const h = n.getAttribute("href") || "";
+        if (/^https?:\/\//i.test(h)) { el.href = h; el.target = "_blank"; el.rel = "noopener noreferrer"; }
+      }
+      walk(n, el);
+      to.appendChild(el);
+    });
+  })(doc.body, out);
+  return out;
+}
+function normalize(obj, cites, active) {
+  const known = new Set(cites.map(c => c.host).filter(Boolean));
+  const topicFor = label => {
+    const l = String(label || "").toLowerCase();
+    return active.find(t => t.label.toLowerCase() === l) || S.topics.find(t => t.label.toLowerCase() === l) ||
+      active.find(t => l && (l.includes(t.label.toLowerCase()) || t.label.toLowerCase().includes(l))) || active[0];
+  };
+  const items = obj.items.filter(i => i && i.headline && i.body_html).slice(0, S.count).map(i => {
+    const t = topicFor(i.topic);
+    const sources = (Array.isArray(i.sources) ? i.sources : []).filter(s => s && /^https?:\/\//i.test(s.url || "")).slice(0, 3).map(s => {
+      const h = hostOf(s.url);
+      const verified = known.size === 0 ? null : [...known].some(k => h === k || h.endsWith("." + k) || k.endsWith("." + h));
+      return { name: String(s.name || h), url: s.url, verified };
+    });
+    const cert = ["confirmed", "reported", "unconfirmed"].includes(String(i.certainty).toLowerCase()) ? String(i.certainty).toLowerCase() : "reported";
+    return {
+      topic: t ? t.label : "News", color: t ? t.color : "#64748B", headline: String(i.headline).trim(), certainty: cert,
+      body: String(i.body_html), sources, image_hint: /^https?:\/\//i.test(i.image_url || "") ? i.image_url : null, image: null
+    };
+  });
+  if (!items.length) throw new Error("No stories came back. Try again, or widen your topics.");
+  const seen = new Set(), more = [];
+  cites.forEach(c => { if (!seen.has(c.url)) { seen.add(c.url); more.push({ title: c.title || c.host || c.url, url: c.url }); } });
+  return { lede: String(obj.lede || "").trim(), items, more };
+}
+
+// ---------------- Images ----------------
+function canLoad(url) {
+  return new Promise(res => {
+    const im = new Image();
+    const done = ok => { clearTimeout(tm); res(ok); };
+    const tm = setTimeout(() => done(false), 7000);
+    im.referrerPolicy = "no-referrer";
+    im.onload = () => done(im.naturalWidth >= 240);
+    im.onerror = () => done(false);
+    im.src = url;
+  });
+}
+async function pageImage(url) {
+  const cache = lsGet("metacache", {});
+  if (cache[url] && Date.now() - cache[url].t < 7 * 864e5) return cache[url].image;
+  try {
+    const ctl = new AbortController();
+    const tm = setTimeout(() => ctl.abort(), 8000);
+    const res = await fetch("https://api.microlink.io/?url=" + encodeURIComponent(url), { signal: ctl.signal });
+    clearTimeout(tm);
+    if (!res.ok) return null;
+    const j = await res.json();
+    const img = j && j.status === "success" && j.data && j.data.image && j.data.image.url ? j.data.image.url : null;
+    cache[url] = { image: img, t: Date.now() };
+    const keys = Object.keys(cache);
+    if (keys.length > 150) keys.slice(0, 50).forEach(k => delete cache[k]);
+    lsSet("metacache", cache);
+    return img;
+  } catch (e) { return null; }
+}
+async function findImage(item, used) {
+  if (item.image_hint && !used.has(item.image_hint) && await canLoad(item.image_hint)) return item.image_hint;
+  const srcs = item.sources.slice().sort((a, b) => (b.verified === true) - (a.verified === true)).slice(0, 2);
+  for (const s of srcs) {
+    const img = await pageImage(s.url);
+    if (img && !used.has(img) && await canLoad(img)) return img;
+  }
+  return null;
+}
+
+// ---------------- Rendering ----------------
+const CERT = { confirmed: "Confirmed", reported: "Reported", unconfirmed: "Unconfirmed" };
+function renderBrief(brief) {
+  const out = $("out");
+  out.innerHTML = "";
+  if (brief.lede) { const p = document.createElement("p"); p.className = "lede"; p.textContent = brief.lede; out.appendChild(p); }
+  const words = brief.items.reduce((a, i) => a + i.body.replace(/<[^>]*>/g, " ").split(/\s+/).length, 0);
+  const meta = document.createElement("div");
+  meta.className = "meta-line";
+  const when = new Date(brief.t).toLocaleString(undefined, { weekday: "short", hour: "2-digit", minute: "2-digit" });
+  const info = document.createElement("span");
+  info.textContent = brief.items.length + (brief.items.length === 1 ? " story" : " stories") + ", " + Math.max(1, Math.round(words / 200)) + " min read, " + when;
+  const share = document.createElement("button");
+  share.textContent = "Share";
+  share.onclick = () => shareBrief(brief);
+  const again = document.createElement("button");
+  again.textContent = "Refresh";
+  again.onclick = () => generate();
+  meta.append(info, share, again);
+  out.appendChild(meta);
+
+  brief.items.forEach((it, idx) => {
+    const card = document.createElement("article");
+    card.className = "card" + (idx === 0 ? " hero" : "");
+    card.dataset.idx = idx;
+    if (S.images && (it.image || it.image === null && brief.pending)) {
+      const fig = document.createElement("figure");
+      fig.className = "shot" + (it.image ? "" : " load");
+      if (it.image) fig.appendChild(imgEl(it.image));
+      card.appendChild(fig);
+    }
+    const body = document.createElement("div");
+    body.className = "body";
+    const meta2 = document.createElement("div");
+    meta2.className = "meta";
+    const tag = document.createElement("span");
+    tag.className = "tag"; tag.textContent = it.topic;
+    tag.style.setProperty("--c", it.color); tag.style.setProperty("--cbg", tint(it.color, 0.13));
+    const cert = document.createElement("span");
+    cert.className = "cert " + it.certainty;
+    const dot = document.createElement("i");
+    cert.append(dot, document.createTextNode(CERT[it.certainty]));
+    meta2.append(tag, cert);
+    const h = document.createElement("h2");
+    h.textContent = it.headline;
+    const prose = document.createElement("div");
+    prose.className = "prose";
+    prose.appendChild(sanitize(it.body));
+    body.append(meta2, h, prose);
+    if (it.sources.length) {
+      const srcs = document.createElement("div");
+      srcs.className = "srcs";
+      it.sources.forEach(s => {
+        const a = document.createElement("a");
+        a.className = "src" + (s.verified === false ? " unv" : "");
+        a.href = s.url; a.target = "_blank"; a.rel = "noopener noreferrer";
+        if (s.verified === false) a.title = "The search did not confirm this link, so check it before relying on it.";
+        const f = document.createElement("img");
+        f.alt = ""; f.src = "https://www.google.com/s2/favicons?domain=" + hostOf(s.url) + "&sz=64"; f.referrerPolicy = "no-referrer";
+        f.onerror = () => f.remove();
+        a.append(f, document.createTextNode(s.name));
+        srcs.appendChild(a);
+      });
+      body.appendChild(srcs);
+    }
+    card.appendChild(body);
+    out.appendChild(card);
+  });
+  if (brief.more && brief.more.length) {
+    const d = document.createElement("details");
+    d.className = "more";
+    const sm = document.createElement("summary");
+    sm.textContent = "Everything the search used (" + brief.more.length + ")";
+    d.appendChild(sm);
+    brief.more.slice(0, 30).forEach(m => {
+      const a = document.createElement("a");
+      a.href = m.url; a.target = "_blank"; a.rel = "noopener noreferrer"; a.textContent = m.title;
+      d.appendChild(a);
+    });
+    out.appendChild(d);
+  }
+}
+function imgEl(src) {
+  const im = document.createElement("img");
+  im.alt = ""; im.referrerPolicy = "no-referrer"; im.loading = "lazy"; im.src = src;
+  im.onload = () => im.classList.add("in");
+  im.onerror = () => { const f = im.closest(".shot"); if (f) f.remove(); };
+  return im;
+}
+function setCardImage(idx, src) {
+  const card = $("out").querySelector('.card[data-idx="' + idx + '"]');
+  if (!card) return;
+  let fig = card.querySelector(".shot");
+  if (!src) { if (fig) fig.remove(); return; }
+  if (!fig) { fig = document.createElement("figure"); fig.className = "shot"; card.insertBefore(fig, card.firstChild); }
+  fig.classList.remove("load");
+  fig.innerHTML = "";
+  fig.appendChild(imgEl(src));
+}
+function shareBrief(brief) {
+  const text = (brief.lede ? brief.lede + "\n\n" : "") + brief.items.map(i => i.headline + (i.sources[0] ? "\n" + i.sources[0].url : "")).join("\n\n");
+  if (navigator.share) navigator.share({ title: "Daily Digest", text }).catch(() => {});
+  else if (navigator.clipboard) navigator.clipboard.writeText(text).then(() => toast("Copied to the clipboard"));
+}
+function showSkeleton(msg) {
+  const out = $("out");
+  out.innerHTML = '<p class="status"><span class="dot"></span><span id="statusText"></span></p>' +
+    [0, 1, 2].map(() => '<div class="skelcard"><div class="skel" style="aspect-ratio:16/9;border-radius:0"></div><div style="padding:22px"><div class="skel" style="height:14px;width:30%;margin-bottom:14px"></div><div class="skel" style="height:26px;width:88%;margin-bottom:10px"></div><div class="skel" style="height:16px;width:96%;margin-bottom:8px"></div><div class="skel" style="height:16px;width:70%"></div></div></div>').join("");
+  setStatus(msg);
+}
+function setStatus(msg) { const s = $("statusText"); if (s) s.textContent = msg; }
+function showNotice(title, text, btnText, fn) {
+  const out = $("out");
+  out.innerHTML = "";
+  const n = document.createElement("div");
+  n.className = "notice";
+  n.innerHTML = "<h3></h3><p></p>";
+  n.querySelector("h3").textContent = title;
+  n.querySelector("p").textContent = text;
+  if (btnText) { const b = document.createElement("button"); b.textContent = btnText; b.onclick = fn; n.appendChild(b); }
+  out.appendChild(n);
+}
+
+// ---------------- Generate ----------------
+let busy = false;
+function setBusy(b) { busy = b; $("goBtn").disabled = b; $("goBtn").textContent = b ? "Working..." : "Get my briefing"; }
+async function generate() {
+  if (busy) return;
+  readFormIfOpen();
+  const active = S.topics.filter(t => t.on);
+  if (!active.length) { toast("Pick at least one topic first"); return; }
+  if (!KEYS[S.provider]) {
+    showNotice("Add your " + (S.provider === "gemini" ? "Gemini" : "OpenAI") + " key", "The digest needs an API key to search the news and write your briefing. It stays on this device.", "Open settings", () => showView("settings"));
+    return;
+  }
+  setBusy(true);
+  showSkeleton("Searching the news and writing your briefing. This can take up to a minute.");
+  try {
+    const prompt = buildPrompt(active);
+    let res, obj;
+    for (let attempt = 0; ; attempt++) {
+      res = await (S.provider === "gemini" ? callGemini : callOpenAI)(prompt);
+      try { obj = parseBrief(res.text); break; }
+      catch (e) { if (attempt >= 1) throw new Error("The model's reply could not be read as a briefing. Please try again."); setStatus("Tidying up the reply..."); }
+    }
+    const brief = Object.assign(normalize(obj, res.cites, active), { id: Date.now(), t: Date.now(), provider: S.provider, model: S.models[S.provider], pending: S.images });
+    renderBrief(brief);
+    saveBrief(brief);
+    if (S.images) {
+      const used = new Set();
+      await Promise.all(brief.items.map(async (it, idx) => {
+        it.image = await findImage(it, used);
+        if (it.image) used.add(it.image);
+        setCardImage(idx, it.image);
+      }));
+      brief.pending = false;
+      saveBrief(brief);
+    }
+  } catch (e) {
+    $("out").innerHTML = "";
+    showNotice("That did not work", e.message || String(e), "Try again", generate);
+    $("out").querySelector("h3").classList.add("err");
+  } finally { setBusy(false); }
+}
+$("goBtn").onclick = generate;
+function readFormIfOpen() { if (!$("view-settings").classList.contains("hidden")) readForm(); }
+
+// ---------------- History ----------------
+function saveBrief(brief) {
+  const list = lsGet("history", []).filter(b => b.id !== brief.id);
+  const slim = Object.assign({}, brief); delete slim.pending;
+  list.unshift(slim);
+  lsSet("history", list.slice(0, 20));
+}
+function renderHistory() {
+  const box = $("histList"), list = lsGet("history", []);
+  box.innerHTML = "";
+  if (!list.length) { box.innerHTML = '<p class="hint" style="margin:0">Nothing yet. Your briefings will appear here.</p>'; return; }
+  list.forEach(b => {
+    const row = document.createElement("div");
+    row.className = "hist";
+    const t = document.createElement("div");
+    t.className = "t";
+    const d = document.createElement("b");
+    d.textContent = new Date(b.t).toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" }) + ", " +
+      new Date(b.t).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+    const s = document.createElement("small");
+    s.textContent = b.items.map(i => i.headline).slice(0, 3).join(" / ");
+    t.append(d, s);
+    const btns = document.createElement("div");
+    btns.className = "b";
+    const open = document.createElement("button");
+    open.className = "open"; open.textContent = "Open";
+    open.onclick = () => { renderBrief(b); showView("brief"); };
+    const del = document.createElement("button");
+    del.textContent = "Delete";
+    del.onclick = () => { lsSet("history", lsGet("history", []).filter(x => x.id !== b.id)); renderHistory(); };
+    btns.append(open, del);
+    row.append(t, btns);
+    box.appendChild(row);
+  });
+}
+$("clearHist").onclick = () => { if (confirm("Delete all past briefings?")) { lsSet("history", []); renderHistory(); } };
+
+// ---------------- Version and updates ----------------
+$("ver").textContent = "v" + APP_VERSION;
+$("verLine").textContent = "Daily Digest, version " + APP_VERSION + " (" + APP_DATE + ")";
+$("today").textContent = new Date().toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" });
+const newer = (a, b) => {
+  const x = a.split(".").map(Number), y = b.split(".").map(Number);
+  for (let i = 0; i < Math.max(x.length, y.length); i++) { if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) > (y[i] || 0); }
+  return false;
+};
+async function remoteVersion() {
+  const res = await fetch(location.pathname + "?nocache=" + Date.now(), { cache: "no-store" });
+  if (!res.ok) throw new Error("status " + res.status);
+  const m = (await res.text()).match(/name="app-version" content="([^"]+)"/);
+  if (!m) throw new Error("no version");
+  return m[1];
+}
+const reloadFresh = () => location.replace(location.pathname + "?v=" + Date.now());
+function showUpdate(v) { $("newVer").textContent = v; $("updateBar").classList.remove("hidden"); }
+$("reloadBtn").onclick = reloadFresh;
+$("verBtn").onclick = async () => {
+  $("verMsg").textContent = "Checking...";
+  try {
+    const v = await remoteVersion();
+    if (newer(v, APP_VERSION)) { $("verMsg").textContent = "Version " + v + " is available."; showUpdate(v); }
+    else $("verMsg").textContent = "You have the latest version.";
+  } catch (e) { $("verMsg").textContent = "Could not check. Open the hosted page, not a local file."; }
+};
+if (location.protocol.startsWith("http")) remoteVersion().then(v => { if (newer(v, APP_VERSION)) showUpdate(v); }).catch(() => {});
+
+// ---------------- Start ----------------
+loadForm(); renderTopics(); syncProvider();
+(function showLast() {
+  const h = lsGet("history", []);
+  if (h.length) renderBrief(h[0]);
+  else showNotice("Welcome", "Choose your topics above, add an API key in Settings, then tap Get my briefing. Your digest arrives as a handful of stories with pictures and sources.", KEYS[S.provider] ? "" : "Open settings", () => showView("settings"));
+})();
+</script>
+</body>
+</html>
