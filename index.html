@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#12151C">
-<meta name="app-version" content="1.2">
+<meta name="app-version" content="1.3">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Digest">
@@ -230,6 +230,12 @@
             <option value="Italian">Italiano</option><option value="Dutch">Nederlands</option>
           </select></div>
       </div>
+      <div class="field"><label for="speed">Speed</label>
+        <select id="speed">
+          <option value="fast">Faster (less reasoning)</option>
+          <option value="balanced">Balanced</option>
+          <option value="thorough">Thorough (slowest)</option>
+        </select></div>
       <label class="check"><input type="checkbox" id="images"> Show pictures when available</label>
       <div class="field"><label for="trusted">Sources I trust (one per line, optional)</label>
         <textarea id="trusted" placeholder="https://www.nature.com&#10;https://electrek.co&#10;Reuters"></textarea></div>
@@ -265,7 +271,7 @@
 <div class="toast" id="toast" role="status"></div>
 
 <script>
-const APP_VERSION = "1.2", APP_DATE = "18 Oct 2026";
+const APP_VERSION = "1.3", APP_DATE = "18 Oct 2026";
 const $ = id => document.getElementById(id);
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const lsGet = (k, d) => { try { const v = localStorage.getItem("dd_" + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } };
@@ -309,7 +315,7 @@ const DEFAULT_TOPICS = [
 ];
 const PALETTE = ["#D97706", "#0284C7", "#059669", "#E11D48", "#7C3AED", "#0891B2", "#65A30D", "#C026D3"];
 const DEFAULTS = {
-  provider: "gemini", models: { gemini: "gemini-3.8-flash", openai: "gpt-5.6" }, count: 5, language: "English",
+  provider: "gemini", speed: "fast", models: { gemini: "gemini-3.8-flash", openai: "gpt-5.6" }, count: 5, language: "English",
   images: true, trusted: "", extra: "", prompt: DEFAULT_PROMPT, remember: true, topics: DEFAULT_TOPICS
 };
 let S = Object.assign({}, DEFAULTS, lsGet("settings", {}));
@@ -401,7 +407,7 @@ $("count").innerHTML = COUNTS.map(n => `<option value="${n}">Up to ${n}</option>
 function loadForm() {
   $("keyGemini").value = KEYS.gemini; $("keyOpenai").value = KEYS.openai;
   $("modelGemini").value = S.models.gemini; $("modelOpenai").value = S.models.openai;
-  $("count").value = String(S.count); $("language").value = S.language;
+  $("count").value = String(S.count); $("language").value = S.language; $("speed").value = S.speed;
   $("images").checked = S.images; $("remember").checked = S.remember;
   $("trusted").value = S.trusted; $("extra").value = S.extra; $("prompt").value = S.prompt;
 }
@@ -409,12 +415,12 @@ function readForm() {
   KEYS.gemini = $("keyGemini").value.trim(); KEYS.openai = $("keyOpenai").value.trim();
   S.models.gemini = $("modelGemini").value.trim() || DEFAULTS.models.gemini;
   S.models.openai = $("modelOpenai").value.trim() || DEFAULTS.models.openai;
-  S.count = parseInt($("count").value, 10) || 5; S.language = $("language").value;
+  S.count = parseInt($("count").value, 10) || 5; S.language = $("language").value; S.speed = $("speed").value;
   S.images = $("images").checked; S.remember = $("remember").checked;
   S.trusted = $("trusted").value; S.extra = $("extra").value;
   S.prompt = $("prompt").value.trim() || DEFAULT_PROMPT;
 }
-["keyGemini", "keyOpenai", "modelGemini", "modelOpenai", "count", "language", "images", "remember", "trusted", "extra", "prompt"].forEach(id =>
+["keyGemini", "keyOpenai", "modelGemini", "modelOpenai", "count", "language", "speed", "images", "remember", "trusted", "extra", "prompt"].forEach(id =>
   $(id).addEventListener("change", () => { readForm(); persist(); syncProvider(); }));
 $("saveBtn").onclick = () => { readForm(); persist("Settings saved on this device"); syncProvider(); };
 $("resetPrompt").onclick = () => { $("prompt").value = DEFAULT_PROMPT; readForm(); persist("Prompt reset"); };
@@ -549,6 +555,123 @@ function parseBrief(text) {
   return obj;
 }
 
+// ---------------- Streaming (stories appear as they are written) ----------------
+const THINK = { fast: "low", balanced: "medium", thorough: "high" };
+async function streamPost(url, headers, body, label, onEvent) {
+  const res = await fetch(url, { method: "POST", headers: Object.assign({ "Content-Type": "application/json" }, headers), body: JSON.stringify(body) });
+  if (!res.ok) {
+    const txt = await res.text();
+    let msg = txt.slice(0, 300);
+    try { const j = JSON.parse(txt); msg = (j.error && (j.error.message || j.error)) || msg; } catch (e) {}
+    const err = new Error(label + " replied " + res.status + ": " + msg);
+    err.status = res.status;
+    throw err;
+  }
+  if (!res.body || !res.body.getReader) throw new Error("Streaming is not supported here.");
+  const reader = res.body.getReader(), dec = new TextDecoder();
+  let buf = "";
+  const handle = raw => {
+    const data = raw.split(/\r?\n/).filter(l => l.startsWith("data:")).map(l => l.slice(5).trim()).join("");
+    if (!data || data === "[DONE]") return;
+    let obj;
+    try { obj = JSON.parse(data); } catch (e) { return; }
+    onEvent(obj);
+  };
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buf += dec.decode(value, { stream: true });
+    let i;
+    while ((i = buf.search(/\r?\n\r?\n/)) >= 0) {
+      const raw = buf.slice(0, i);
+      buf = buf.slice(i).replace(/^\r?\n\r?\n/, "");
+      handle(raw);
+    }
+  }
+  if (buf.trim()) handle(buf);
+}
+async function streamGemini(prompt, onText) {
+  let text = "", cites = [], finish = "";
+  const url = "https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(S.models.gemini) + ":streamGenerateContent?alt=sse";
+  const run = async think => {
+    text = ""; cites = []; finish = "";
+    const body = { contents: [{ role: "user", parts: [{ text: prompt }] }], tools: [{ google_search: {} }],
+      generationConfig: Object.assign({ maxOutputTokens: 16000 }, think ? { thinkingConfig: { thinkingLevel: THINK[S.speed] || "low" } } : {}) };
+    await streamPost(url, { "x-goog-api-key": KEYS.gemini }, body, "Google", ev => {
+      const c = ev.candidates && ev.candidates[0];
+      if (!c) return;
+      ((c.content && c.content.parts) || []).forEach(p => { if (!p.thought && p.text) { text += p.text; onText(text); } });
+      if (c.finishReason) finish = c.finishReason;
+      ((c.groundingMetadata && c.groundingMetadata.groundingChunks) || []).forEach(g => {
+        if (g.web && g.web.uri) cites.push({ url: g.web.uri, title: g.web.title || "", host: /^[a-z0-9.-]+\.[a-z]{2,}$/i.test(g.web.title || "") ? g.web.title.replace(/^www\./, "").toLowerCase() : "" });
+      });
+    });
+  };
+  try { await run(true); }
+  catch (e) {
+    if (e.status === 400 && !text) await run(false);      // this model may not accept a thinking setting
+    else if (!e.status && !text) return callGemini(prompt); // streaming not available: use the plain request
+    else throw e;
+  }
+  if (!text) throw new Error("Gemini returned no text" + (finish ? " (finish reason: " + finish + ")" : "") + ".");
+  return { text, cites };
+}
+function openaiCites(resp) {
+  const cites = [];
+  ((resp && resp.output) || []).forEach(o => {
+    if (o.type !== "message") return;
+    (o.content || []).forEach(p => (p.annotations || []).forEach(a => {
+      if (a.type === "url_citation" && a.url) {
+        const url = a.url.replace(/([?&])utm_source=openai(&|$)/, "$1").replace(/[?&]$/, "");
+        cites.push({ url, title: a.title || "", host: hostOf(url) });
+      }
+    }));
+  });
+  return cites;
+}
+async function streamOpenAI(prompt, onText) {
+  let text = "", resp = null;
+  const run = async reasoning => {
+    text = ""; resp = null;
+    const body = Object.assign({ model: S.models.openai, input: prompt, tools: [{ type: "web_search" }], max_output_tokens: 16000, stream: true },
+      reasoning ? { reasoning: { effort: THINK[S.speed] || "low" } } : {});
+    await streamPost("https://api.openai.com/v1/responses", { Authorization: "Bearer " + KEYS.openai }, body, "OpenAI", ev => {
+      if (ev.type === "response.output_text.delta" && ev.delta) { text += ev.delta; onText(text); }
+      else if (ev.type === "response.completed") resp = ev.response;
+      else if (ev.type === "response.failed" || ev.type === "error") throw new Error("OpenAI: " + ((ev.response && ev.response.error && ev.response.error.message) || ev.message || "the request failed"));
+    });
+  };
+  try { await run(true); }
+  catch (e) {
+    if (e.status === 400 && !text) await run(false);
+    else if (!e.status && !text && /Streaming|fetch|network|Load failed/i.test(e.message)) return callOpenAI(prompt);
+    else throw e;
+  }
+  if (!text && resp) {
+    (resp.output || []).forEach(o => (o.content || []).forEach(p => { if (p.type === "output_text") text += p.text || ""; }));
+  }
+  if (!text) throw new Error("OpenAI returned no text.");
+  return { text: text.trim(), cites: openaiCites(resp) };
+}
+// Reads whatever is complete so far from a half-written JSON reply
+function extractPartial(text) {
+  const out = { lede: null, items: [] };
+  const lm = text.match(/"lede"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+  if (lm) { try { out.lede = JSON.parse('"' + lm[1] + '"'); } catch (e) {} }
+  const k = text.search(/"items"\s*:\s*\[/);
+  if (k < 0) return out;
+  let i = text.indexOf("[", k) + 1, depth = 0, inStr = false, esc = false, start = -1;
+  for (; i < text.length; i++) {
+    const c = text[i];
+    if (inStr) { if (esc) esc = false; else if (c === "\\") esc = true; else if (c === '"') inStr = false; continue; }
+    if (c === '"') { inStr = true; continue; }
+    if (c === "{") { if (depth === 0) start = i; depth++; }
+    else if (c === "}") { depth--; if (depth === 0 && start >= 0) { try { out.items.push(JSON.parse(text.slice(start, i + 1))); } catch (e) {} start = -1; } }
+    else if (c === "]" && depth === 0) break;
+  }
+  return out;
+}
+
 // ---------------- Normalising and cleaning ----------------
 const ALLOWED = new Set(["P", "STRONG", "EM", "B", "I", "UL", "OL", "LI", "BLOCKQUOTE", "BR", "A", "CODE"]);
 const DROP = new Set(["SCRIPT", "STYLE", "IFRAME", "OBJECT", "EMBED", "NOSCRIPT", "TEMPLATE"]);
@@ -574,14 +697,14 @@ function sanitize(html) {
   })(doc.body, out);
   return out;
 }
-function normalize(obj, cites, active) {
-  const known = new Set(cites.map(c => c.host).filter(Boolean));
+function makeNorm(active, known) {
   const topicFor = label => {
     const l = String(label || "").toLowerCase();
     return active.find(t => t.label.toLowerCase() === l) || S.topics.find(t => t.label.toLowerCase() === l) ||
       active.find(t => l && (l.includes(t.label.toLowerCase()) || t.label.toLowerCase().includes(l))) || active[0];
   };
-  const items = obj.items.filter(i => i && i.headline && i.body_html).slice(0, S.count).map(i => {
+  return function (i) {
+    if (!i || !i.headline || !i.body_html) return null;
     const t = topicFor(i.topic);
     const sources = (Array.isArray(i.sources) ? i.sources : []).filter(s => s && /^https?:\/\//i.test(s.url || "")).slice(0, 3).map(s => {
       const h = hostOf(s.url);
@@ -591,9 +714,14 @@ function normalize(obj, cites, active) {
     const cert = ["confirmed", "reported", "unconfirmed"].includes(String(i.certainty).toLowerCase()) ? String(i.certainty).toLowerCase() : "reported";
     return {
       topic: t ? t.label : "News", color: t ? t.color : "#64748B", headline: String(i.headline).trim(), certainty: cert,
-      body: String(i.body_html), sources, image_hint: /^https?:\/\//i.test(i.image_url || "") ? i.image_url : null, image: null
+      body: String(i.body_html), sources, image_hint: /^https?:\/\//i.test(i.image_url || "") ? i.image_url : null, image: null, imgPending: false
     };
-  });
+  };
+}
+function normalize(obj, cites, active) {
+  const known = new Set(cites.map(c => c.host).filter(Boolean));
+  const f = makeNorm(active, known);
+  const items = obj.items.map(f).filter(Boolean).slice(0, S.count);
   if (!items.length) throw new Error("No stories came back. Try again, or widen your topics.");
   const seen = new Set(), more = [];
   cites.forEach(c => { if (!seen.has(c.url)) { seen.add(c.url); more.push({ title: c.title || c.host || c.url, url: c.url }); } });
@@ -645,6 +773,13 @@ const CERT = { confirmed: "Confirmed", reported: "Reported", unconfirmed: "Uncon
 function renderBrief(brief) {
   const out = $("out");
   out.innerHTML = "";
+  if (brief.streaming) {
+    const st = document.createElement("p");
+    st.className = "status";
+    st.innerHTML = '<span class="dot"></span><span id="statusText"></span>';
+    out.appendChild(st);
+    setStatus(statusBase);
+  }
   if (brief.lede) { const p = document.createElement("p"); p.className = "lede"; p.textContent = brief.lede; out.appendChild(p); }
   const words = brief.items.reduce((a, i) => a + i.body.replace(/<[^>]*>/g, " ").split(/\s+/).length, 0);
   const meta = document.createElement("div");
@@ -665,10 +800,10 @@ function renderBrief(brief) {
     const card = document.createElement("article");
     card.className = "card" + (idx === 0 ? " hero" : "");
     card.dataset.idx = idx;
-    if (S.images && (it.image || it.image === null && brief.pending)) {
+    if (S.images && (it.image || it.imgPending)) {
       const fig = document.createElement("figure");
       fig.className = "shot" + (it.image ? "" : " load");
-      if (it.image) fig.appendChild(imgEl(it.image));
+      if (it.image) fig.appendChild(imgEl(it.image, true));
       card.appendChild(fig);
     }
     const body = document.createElement("div");
@@ -722,9 +857,10 @@ function renderBrief(brief) {
     out.appendChild(d);
   }
 }
-function imgEl(src) {
+function imgEl(src, instant) {
   const im = document.createElement("img");
   im.alt = ""; im.referrerPolicy = "no-referrer"; im.loading = "lazy"; im.src = src;
+  if (instant) im.classList.add("in");
   im.onload = () => im.classList.add("in");
   im.onerror = () => { const f = im.closest(".shot"); if (f) f.remove(); };
   return im;
@@ -750,7 +886,12 @@ function showSkeleton(msg) {
     [0, 1, 2].map(() => '<div class="skelcard"><div class="skel" style="aspect-ratio:16/9;border-radius:0"></div><div style="padding:22px"><div class="skel" style="height:14px;width:30%;margin-bottom:14px"></div><div class="skel" style="height:26px;width:88%;margin-bottom:10px"></div><div class="skel" style="height:16px;width:96%;margin-bottom:8px"></div><div class="skel" style="height:16px;width:70%"></div></div></div>').join("");
   setStatus(msg);
 }
-function setStatus(msg) { const s = $("statusText"); if (s) s.textContent = msg; }
+let statusBase = "", statusT0 = 0;
+function setStatus(msg) {
+  statusBase = msg;
+  const s = $("statusText");
+  if (s) s.textContent = msg + (statusT0 ? " " + Math.round((Date.now() - statusT0) / 1000) + "s" : "");
+}
 function showNotice(title, text, btnText, fn) {
   const out = $("out");
   out.innerHTML = "";
@@ -764,7 +905,7 @@ function showNotice(title, text, btnText, fn) {
 }
 
 // ---------------- Generate ----------------
-let busy = false;
+let busy = false, runId = 0, tick = null;
 function setBusy(b) { busy = b; $("goBtn").disabled = b; $("goBtn").textContent = b ? "Working..." : "Get my briefing"; }
 async function generate() {
   if (busy) return;
@@ -775,34 +916,77 @@ async function generate() {
     showNotice("Add your " + (S.provider === "gemini" ? "Gemini" : "OpenAI") + " key", "The digest needs an API key to search the news and write your briefing. It stays on this device.", "Open settings", () => showView("settings"));
     return;
   }
+  const myRun = ++runId;
   setBusy(true);
-  showSkeleton("Searching the news and writing your briefing. This can take up to a minute.");
+  statusT0 = Date.now();
+  showSkeleton("Searching the news");
+  clearInterval(tick);
+  tick = setInterval(() => {
+    const secs = (Date.now() - statusT0) / 1000;
+    setStatus(secs > 60 && /Searching/.test(statusBase) ? "Still searching. Slow days can take a minute or two" : statusBase);
+  }, 1000);
+  const live = { id: Date.now(), t: Date.now(), provider: S.provider, model: S.models[S.provider], lede: "", items: [], more: [], streaming: true };
+  const used = new Set(), imgJobs = [];
+  const startImage = (it, idx) => {
+    if (!S.images || it.imgStarted) return;
+    it.imgStarted = true; it.imgPending = true;
+    imgJobs.push(findImage(it, used).then(img => {
+      it.image = img; it.imgPending = false;
+      if (img) used.add(img);
+      if (runId === myRun) setCardImage(idx, img);
+    }));
+  };
+  const norm = makeNorm(active, new Set());
+  let sig = "";
+  const onText = full => {
+    if (runId !== myRun) return;
+    const p = extractPartial(full);
+    const raw = p.items.slice(0, S.count);
+    const newSig = (p.lede || "") + "|" + raw.length;
+    if (newSig === sig) return;
+    sig = newSig;
+    if (p.lede) live.lede = p.lede;
+    raw.forEach((r, i) => { if (!live.items[i]) { const n = norm(r); if (n) live.items[i] = n; } });
+    live.items = live.items.filter(Boolean);
+    if (!live.items.length && !live.lede) return;
+    live.items.forEach((it, i) => startImage(it, i));
+    setStatus(live.items.length ? "Writing your briefing" : "Writing the summary");
+    renderBrief(live);
+  };
   try {
     const prompt = buildPrompt(active);
-    let res, obj;
-    for (let attempt = 0; ; attempt++) {
-      res = await (S.provider === "gemini" ? callGemini : callOpenAI)(prompt);
-      try { obj = parseBrief(res.text); break; }
-      catch (e) { if (attempt >= 1) throw new Error("The model's reply could not be read as a briefing. Please try again."); setStatus("Tidying up the reply..."); }
+    let res = null;
+    try { res = await (S.provider === "gemini" ? streamGemini : streamOpenAI)(prompt, onText); }
+    catch (e) { if (!live.items.length) throw e; }   // keep what already arrived if the connection drops
+    let obj = null;
+    if (res) { try { obj = parseBrief(res.text); } catch (e) { obj = null; } }
+    if (!obj && !live.items.length) throw new Error("The model's reply could not be read as a briefing. Please try again.");
+    if (runId !== myRun) return;
+    if (obj) {
+      const fin = normalize(obj, res.cites, active);
+      fin.items.forEach((fi, i) => {
+        if (live.items[i]) { const keep = { image: live.items[i].image, imgPending: live.items[i].imgPending, imgStarted: live.items[i].imgStarted }; Object.assign(live.items[i], fi, keep); }
+        else live.items[i] = fi;
+      });
+      live.items.length = Math.min(live.items.length, fin.items.length);
+      live.lede = fin.lede || live.lede;
+      live.more = fin.more;
     }
-    const brief = Object.assign(normalize(obj, res.cites, active), { id: Date.now(), t: Date.now(), provider: S.provider, model: S.models[S.provider], pending: S.images });
-    renderBrief(brief);
-    saveBrief(brief);
-    if (S.images) {
-      const used = new Set();
-      await Promise.all(brief.items.map(async (it, idx) => {
-        it.image = await findImage(it, used);
-        if (it.image) used.add(it.image);
-        setCardImage(idx, it.image);
-      }));
-      brief.pending = false;
-      saveBrief(brief);
-    }
+    live.streaming = false;
+    clearInterval(tick); statusT0 = 0;
+    live.items.forEach((it, i) => startImage(it, i));
+    renderBrief(live);
+    saveBrief(live);
+    setBusy(false);                                   // the text is ready, pictures keep loading in the background
+    await Promise.all(imgJobs);
+    saveBrief(live);
   } catch (e) {
-    $("out").innerHTML = "";
-    showNotice("That did not work", e.message || String(e), "Try again", generate);
-    $("out").querySelector("h3").classList.add("err");
-  } finally { setBusy(false); }
+    if (runId === myRun) {
+      $("out").innerHTML = "";
+      showNotice("That did not work", e.message || String(e), "Try again", generate);
+      $("out").querySelector("h3").classList.add("err");
+    }
+  } finally { clearInterval(tick); statusT0 = 0; if (runId === myRun) setBusy(false); }
 }
 $("goBtn").onclick = generate;
 function readFormIfOpen() { if (!$("view-settings").classList.contains("hidden")) readForm(); }
@@ -810,7 +994,7 @@ function readFormIfOpen() { if (!$("view-settings").classList.contains("hidden")
 // ---------------- History ----------------
 function saveBrief(brief) {
   const list = lsGet("history", []).filter(b => b.id !== brief.id);
-  const slim = Object.assign({}, brief); delete slim.pending;
+  const slim = JSON.parse(JSON.stringify(brief)); delete slim.streaming; slim.items.forEach(i => { delete i.imgPending; delete i.imgStarted; });
   list.unshift(slim);
   lsSet("history", list.slice(0, 20));
 }
