@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#12151C">
-<meta name="app-version" content="1.4">
+<meta name="app-version" content="1.5">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Digest">
@@ -211,6 +211,7 @@
   <!-- Long read -->
   <section id="view-longread" class="hidden">
     <p class="lrintro">One exceptional article from the last 14 days, free to read, with a companion read that sets out its ideas, context and criticisms.</p>
+    <div class="group hidden" id="lrList"><h3>Reading list</h3><p class="hint">Saved to finish later. Tap Done when you have read one.</p><div id="lrListBody"></div></div>
     <div class="controls">
       <button class="go" id="lrGoBtn">Find my long read</button>
       <p class="sub"><span id="lrRunInfo"></span> <button id="lrInfoSettings">Change</button></p>
@@ -308,7 +309,7 @@
 <div class="toast" id="toast" role="status"></div>
 
 <script>
-const APP_VERSION = "1.4", APP_DATE = "14 Nov 2026";
+const APP_VERSION = "1.5", APP_DATE = "14 Nov 2026";
 const $ = id => document.getElementById(id);
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const lsGet = (k, d) => { try { const v = localStorage.getItem("dd_" + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } };
@@ -1251,7 +1252,11 @@ function renderLongRead(rec) {
   const again = document.createElement("button");
   again.textContent = "Find another";
   again.onclick = () => generateLongRead();
-  meta.append(info, share, again);
+  const sv = document.createElement("button");
+  const paintSv = () => { sv.textContent = rec.saved ? "Saved \u2713" : "Save for later"; sv.style.fontWeight = rec.saved ? "700" : ""; };
+  paintSv();
+  sv.onclick = () => { toggleSaved(rec); paintSv(); };
+  meta.append(info, sv, share, again);
   out.appendChild(meta);
 
   const card = document.createElement("article");
@@ -1312,7 +1317,42 @@ function renderLongRead(rec) {
 function saveLongRead(rec) {
   const list = lsGet("lrhist", []).filter(x => x.id !== rec.id);
   list.unshift(rec);
-  lsSet("lrhist", list.slice(0, 30));
+  // Saved items are never dropped. Only the newest 30 others are kept.
+  let n = 0;
+  lsSet("lrhist", list.filter(x => x.saved || ++n <= 30));
+  renderLrList();
+}
+function toggleSaved(rec) {
+  rec.saved = !rec.saved;
+  saveLongRead(rec);
+  toast(rec.saved ? "Added to your reading list" : "Removed from your reading list");
+}
+function renderLrList() {
+  const items = lsGet("lrhist", []).filter(x => x.saved), box = $("lrListBody");
+  $("lrList").classList.toggle("hidden", !items.length);
+  box.innerHTML = "";
+  items.forEach(rec => {
+    const row = document.createElement("div");
+    row.className = "hist";
+    const t = document.createElement("div");
+    t.className = "t";
+    const d = document.createElement("b");
+    d.textContent = rec.title;
+    const sm = document.createElement("small");
+    sm.textContent = rec.publisher + ", about " + rec.minutes + " min";
+    t.append(d, sm);
+    const btns = document.createElement("div");
+    btns.className = "b";
+    const open = document.createElement("button");
+    open.className = "open"; open.textContent = "Open";
+    open.onclick = () => { renderLongRead(rec); window.scrollTo({ top: 0 }); };
+    const done = document.createElement("button");
+    done.textContent = "Done";
+    done.onclick = () => { rec.saved = false; saveLongRead(rec); };
+    btns.append(open, done);
+    row.append(t, btns);
+    box.appendChild(row);
+  });
 }
 function renderLrHistory() {
   const box = $("lrHistList"), list = lsGet("lrhist", []);
@@ -1326,7 +1366,7 @@ function renderLrHistory() {
     const d = document.createElement("b");
     d.textContent = rec.title;
     const sm = document.createElement("small");
-    sm.textContent = rec.publisher + ", " + fmtDate(rec.published);
+    sm.textContent = (rec.saved ? "Saved. " : "") + rec.publisher + ", " + fmtDate(rec.published);
     t.append(d, sm);
     const btns = document.createElement("div");
     btns.className = "b";
@@ -1335,7 +1375,7 @@ function renderLrHistory() {
     open.onclick = () => { renderLongRead(rec); showView("longread"); };
     const del = document.createElement("button");
     del.textContent = "Delete";
-    del.onclick = () => { lsSet("lrhist", lsGet("lrhist", []).filter(x => x.id !== rec.id)); renderLrHistory(); };
+    del.onclick = () => { lsSet("lrhist", lsGet("lrhist", []).filter(x => x.id !== rec.id)); renderLrHistory(); renderLrList(); };
     btns.append(open, del);
     row.append(t, btns);
     box.appendChild(row);
@@ -1374,7 +1414,7 @@ $("verBtn").onclick = async () => {
 if (location.protocol.startsWith("http")) remoteVersion().then(v => { if (newer(v, APP_VERSION)) showUpdate(v); }).catch(() => {});
 
 // ---------------- Start ----------------
-loadForm(); renderTopics(); syncProvider(); renderLrSeenNote(); renderLrRunInfo();
+loadForm(); renderTopics(); syncProvider(); renderLrSeenNote(); renderLrRunInfo(); renderLrList();
 (function showLast() {
   const lh = lsGet("lrhist", []);
   if (lh.length) renderLongRead(lh[0]); else lrNotice("Your long read", "Tap Find my long read. It searches for one exceptional article from the last 14 days, checks that it is free to read, and writes a companion read for it.", "", null);
