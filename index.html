@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#12151C">
-<meta name="app-version" content="1.3">
+<meta name="app-version" content="1.4">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Digest">
@@ -159,6 +159,17 @@
            background: var(--btn); color: var(--btn-ink); padding: 12px 20px; border-radius: 999px; font-weight: 600; font-size: 15px; transition: .25s; z-index: 10; max-width: 90vw; text-align: center; }
   .toast.show { opacity: 1; transform: translate(-50%, 0); }
   details.adv summary { cursor: pointer; font-weight: 600; font-size: 15px; padding: 4px 0; }
+  .lrintro { color: var(--muted); font: 400 18px/1.55 var(--serif); margin: 0 2px 18px; }
+  .lrlink { display: inline-flex; align-items: center; gap: 8px; margin: 4px 0 14px; padding: 13px 20px; border-radius: 14px; background: var(--btn); color: var(--btn-ink);
+            font: 700 16px/1 var(--ui); text-decoration: none; }
+  .byline { color: var(--muted); font-size: 15px; margin: -4px 0 12px; }
+  .checks { list-style: none; margin: 16px 0 0; padding: 14px 0 0; border-top: 1px solid var(--line); display: grid; gap: 8px; font-size: 14px; color: var(--muted); }
+  .checks li { display: flex; gap: 10px; align-items: flex-start; }
+  .checks i { flex: none; width: 9px; height: 9px; margin-top: 6px; border-radius: 50%; background: var(--ok); }
+  .checks li.warn i { background: var(--warn); }
+  .card .companion h3, .prose h3 { font: 700 19px/1.25 var(--display); letter-spacing: -0.01em; margin: 18px 0 8px; }
+  .companion .lab { font-size: 13px; color: var(--muted); font-weight: 700; letter-spacing: .02em; margin: 0 0 10px; text-transform: uppercase; }
+  @media (max-width: 520px) { .tabs button { padding: 9px 11px; font-size: 14px; } }
   @media (prefers-color-scheme: dark) { .tag { color: #C9CEFF; color: color-mix(in srgb, var(--c) 40%, #fff); } }
   @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 </style>
@@ -174,6 +185,7 @@
     </div>
     <nav class="tabs" aria-label="Sections">
       <button data-view="brief" class="on">Briefing</button>
+      <button data-view="longread">Long read</button>
       <button data-view="history">History</button>
       <button data-view="settings">Settings</button>
     </nav>
@@ -196,8 +208,22 @@
     <div id="out"></div>
   </section>
 
+  <!-- Long read -->
+  <section id="view-longread" class="hidden">
+    <p class="lrintro">One exceptional article from the last 14 days, free to read, with a companion read that sets out its ideas, context and criticisms.</p>
+    <div class="controls">
+      <button class="go" id="lrGoBtn">Find my long read</button>
+      <p class="sub"><span id="lrRunInfo"></span> <button id="lrInfoSettings">Change</button></p>
+    </div>
+    <div id="lrOut"></div>
+  </section>
+
   <!-- History -->
   <section id="view-history" class="hidden">
+    <div class="group">
+      <h3>Past long reads</h3>
+      <div id="lrHistList"></div>
+    </div>
     <div class="group">
       <h3>Past briefings</h3>
       <p class="hint">The last 20 briefings are kept on this device. They help the digest avoid repeating stories.</p>
@@ -249,6 +275,17 @@
     </div>
 
     <div class="group">
+      <h3>Long read</h3>
+      <p class="hint">What the long read should look for. The article is always from the last 14 days and never one you were already given.</p>
+      <div class="field"><label for="lrInterests">What I like</label><textarea id="lrInterests" style="min-height:170px"></textarea></div>
+      <p class="hint" style="margin:10px 0 0" id="lrSeenNote"></p>
+      <div class="actions">
+        <button class="btn alt" id="lrReset">Reset to my default interests</button>
+        <button class="btn alt" id="lrClearSeen">Clear recommended list</button>
+      </div>
+    </div>
+
+    <div class="group">
       <h3>Save and move</h3>
       <p class="hint">Settings save automatically on this device. Export a copy to move them to another device.</p>
       <label class="check"><input type="checkbox" id="exportKeys"> Include API keys in the export</label>
@@ -271,7 +308,7 @@
 <div class="toast" id="toast" role="status"></div>
 
 <script>
-const APP_VERSION = "1.3", APP_DATE = "18 Oct 2026";
+const APP_VERSION = "1.4", APP_DATE = "14 Nov 2026";
 const $ = id => document.getElementById(id);
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const lsGet = (k, d) => { try { const v = localStorage.getItem("dd_" + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } };
@@ -314,8 +351,9 @@ const DEFAULT_TOPICS = [
   { id: "scifi", label: "Science fiction books", desc: "notable science fiction book news (major releases, awards, adaptations, authors)", color: "#9333EA", on: true }
 ];
 const PALETTE = ["#D97706", "#0284C7", "#059669", "#E11D48", "#7C3AED", "#0891B2", "#65A30D", "#C026D3"];
+const LR_DEFAULT_INTERESTS = "AI and science are the core interest: major advances, surprising research, the societal and philosophical implications of AI, and thoughtful critiques. Also science fiction (especially lesser-known authors, structural experimentation, and works that deliberately withhold orientation), the Fermi paradox, the Great Silence, the Drake equation and the Great Filter. Thoughtful science, culture or history writing when it is especially compelling. Quality and originality matter more than popularity.";
 const DEFAULTS = {
-  provider: "gemini", speed: "fast", models: { gemini: "gemini-3.8-flash", openai: "gpt-5.6" }, count: 5, language: "English",
+  lrInterests: LR_DEFAULT_INTERESTS, provider: "gemini", speed: "fast", models: { gemini: "gemini-3.8-flash", openai: "gpt-5.6" }, count: 5, language: "English",
   images: true, trusted: "", extra: "", prompt: DEFAULT_PROMPT, remember: true, topics: DEFAULT_TOPICS
 };
 let S = Object.assign({}, DEFAULTS, lsGet("settings", {}));
@@ -344,13 +382,15 @@ const tint = (h, a) => { const [r, g, b] = hexRgb(h); return `rgba(${r},${g},${b
 // ---------------- Views ----------------
 function showView(v) {
   if (!$("view-settings").classList.contains("hidden") && v !== "settings") { readForm(); persist(); syncProvider(); }
-  ["brief", "history", "settings"].forEach(x => $("view-" + x).classList.toggle("hidden", x !== v));
+  ["brief", "longread", "history", "settings"].forEach(x => $("view-" + x).classList.toggle("hidden", x !== v));
   document.querySelectorAll(".tabs button").forEach(b => b.classList.toggle("on", b.dataset.view === v));
-  if (v === "history") renderHistory();
+  if (v === "history") { renderHistory(); renderLrHistory(); }
+  if (v === "longread") renderLrRunInfo();
   window.scrollTo({ top: 0 });
 }
 document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => showView(b.dataset.view));
 $("infoSettings").onclick = () => showView("settings");
+$("lrInfoSettings").onclick = () => showView("settings");
 
 // ---------------- Topics ----------------
 function renderTopics() {
@@ -409,7 +449,7 @@ function loadForm() {
   $("modelGemini").value = S.models.gemini; $("modelOpenai").value = S.models.openai;
   $("count").value = String(S.count); $("language").value = S.language; $("speed").value = S.speed;
   $("images").checked = S.images; $("remember").checked = S.remember;
-  $("trusted").value = S.trusted; $("extra").value = S.extra; $("prompt").value = S.prompt;
+  $("trusted").value = S.trusted; $("extra").value = S.extra; $("prompt").value = S.prompt; $("lrInterests").value = S.lrInterests;
 }
 function readForm() {
   KEYS.gemini = $("keyGemini").value.trim(); KEYS.openai = $("keyOpenai").value.trim();
@@ -419,8 +459,9 @@ function readForm() {
   S.images = $("images").checked; S.remember = $("remember").checked;
   S.trusted = $("trusted").value; S.extra = $("extra").value;
   S.prompt = $("prompt").value.trim() || DEFAULT_PROMPT;
+  S.lrInterests = $("lrInterests").value.trim() || LR_DEFAULT_INTERESTS;
 }
-["keyGemini", "keyOpenai", "modelGemini", "modelOpenai", "count", "language", "speed", "images", "remember", "trusted", "extra", "prompt"].forEach(id =>
+["keyGemini", "keyOpenai", "modelGemini", "modelOpenai", "count", "language", "speed", "images", "remember", "trusted", "extra", "prompt", "lrInterests"].forEach(id =>
   $(id).addEventListener("change", () => { readForm(); persist(); syncProvider(); }));
 $("saveBtn").onclick = () => { readForm(); persist("Settings saved on this device"); syncProvider(); };
 $("resetPrompt").onclick = () => { $("prompt").value = DEFAULT_PROMPT; readForm(); persist("Prompt reset"); };
@@ -510,11 +551,16 @@ async function postJson(url, headers, body, label) {
   }
   throw last;
 }
-async function callGemini(prompt) {
+async function callGemini(prompt, urlContext) {
   const key = KEYS.gemini;
-  const data = await postJson("https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(S.models.gemini) + ":generateContent",
-    { "x-goog-api-key": key },
-    { contents: [{ role: "user", parts: [{ text: prompt }] }], tools: [{ google_search: {} }], generationConfig: { maxOutputTokens: 16000 } }, "Google");
+  const gurl = "https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(S.models.gemini) + ":generateContent";
+  const gbody = tools => ({ contents: [{ role: "user", parts: [{ text: prompt }] }], tools, generationConfig: { maxOutputTokens: 16000 } });
+  let data;
+  try { data = await postJson(gurl, { "x-goog-api-key": key }, gbody(urlContext ? [{ google_search: {} }, { url_context: {} }] : [{ google_search: {} }]), "Google"); }
+  catch (e) {
+    if (urlContext && /replied 400/.test(e.message)) data = await postJson(gurl, { "x-goog-api-key": key }, gbody([{ google_search: {} }]), "Google");
+    else throw e;
+  }
   const c = data.candidates && data.candidates[0];
   const text = ((c && c.content && c.content.parts) || []).filter(p => !p.thought).map(p => p.text || "").join("").trim();
   const cites = [];
@@ -522,7 +568,9 @@ async function callGemini(prompt) {
     if (g.web && g.web.uri) cites.push({ url: g.web.uri, title: g.web.title || "", host: /^[a-z0-9.-]+\.[a-z]{2,}$/i.test(g.web.title || "") ? g.web.title.replace(/^www\./, "").toLowerCase() : "" });
   });
   if (!text) throw new Error("Gemini returned no text" + (c && c.finishReason ? " (finish reason: " + c.finishReason + ")" : "") + ".");
-  return { text, cites };
+  const urls = ((c && c.urlContextMetadata && c.urlContextMetadata.urlMetadata) || []).map(u => ({
+    url: u.retrievedUrl || u.retrieved_url || "", status: u.urlRetrievalStatus || u.url_retrieval_status || "" }));
+  return { text, cites, urls };
 }
 async function callOpenAI(prompt) {
   const data = await postJson("https://api.openai.com/v1/responses", { Authorization: "Bearer " + KEYS.openai },
@@ -673,7 +721,7 @@ function extractPartial(text) {
 }
 
 // ---------------- Normalising and cleaning ----------------
-const ALLOWED = new Set(["P", "STRONG", "EM", "B", "I", "UL", "OL", "LI", "BLOCKQUOTE", "BR", "A", "CODE"]);
+const ALLOWED = new Set(["H3", "H4", "P", "STRONG", "EM", "B", "I", "UL", "OL", "LI", "BLOCKQUOTE", "BR", "A", "CODE"]);
 const DROP = new Set(["SCRIPT", "STYLE", "IFRAME", "OBJECT", "EMBED", "NOSCRIPT", "TEMPLATE"]);
 function sanitize(html) {
   let src = String(html || "");
@@ -1028,6 +1076,274 @@ function renderHistory() {
 }
 $("clearHist").onclick = () => { if (confirm("Delete all past briefings?")) { lsSet("history", []); renderHistory(); } };
 
+// ---------------- Long read ----------------
+const LR_DAYS = 14;
+const normUrl = u => String(u || "").toLowerCase().replace(/^https?:\/\/(www\.)?/, "").replace(/[?#].*$/, "").replace(/\/+$/, "");
+function daysOld(iso) {
+  const m = String(iso || "").match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return NaN;
+  const d = Date.UTC(+m[1], +m[2] - 1, +m[3]), now = new Date();
+  return Math.round((Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) - d) / 864e5);
+}
+const inWindow = iso => { const d = daysOld(iso); return !isNaN(d) && d >= -1 && d <= LR_DAYS; };
+const isoDaysAgo = n => { const d = new Date(Date.now() - n * 864e5); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); };
+const isoOk = v => /^\d{4}-\d{2}-\d{2}/.test(String(v || ""));
+const fmtDate = iso => { const m = String(iso).match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? new Date(Date.UTC(+m[1], +m[2] - 1, +m[3])).toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }) : String(iso); };
+
+function lrFindPrompt(excluded) {
+  return `Find exactly one exceptional article or essay for one reader. Today is ${dateLong()}.
+The reader's interests:
+${S.lrInterests.trim() || LR_DEFAULT_INTERESTS}
+
+Requirements:
+- Published between ${isoDaysAgo(LR_DAYS)} and today. Check the publication date on the page itself, not in the search snippet.
+- Readable in full by anyone, with no payment, subscription, metered wall or registration. If you cannot be sure of that, choose something else. Open venues, university sites, personal sites, open access journals, and magazines with free pieces are good places to look.
+- Quality, originality and depth matter more than popularity. Skip news reports, press releases, listicles, rewrites of other people's work and aggregator pages.
+- A piece of about 10 to 15 minutes reading time.
+- The link goes straight to the article itself, not to a home page, a search page or a redirect.
+- Never pick any of these, which were already recommended or rejected:
+${excluded.length ? excluded.slice(-40).map(u => "  " + u).join("\n") : "  (none)"}
+Use web search. Return ONLY one JSON object, with no markdown fences and no other text, in this shape:
+{"title": "", "author": "", "publisher": "", "url": "", "published": "YYYY-MM-DD", "reading_minutes": 12, "free_access": true, "why": "Two or three specific sentences, in ${S.language}, on why this piece is worth the reader's time, tied to their interests and to what is new or surprising in it."}
+Set free_access to false if you could not confirm free access.`;
+}
+function lrReadPrompt(a) {
+  return `Open this article and read it in full: ${a.url}
+It is "${a.title}" by ${a.author || "an unnamed author"}, in ${a.publisher || hostOf(a.url)}. Today is ${dateLong()}.
+The reader's interests:
+${S.lrInterests.trim() || LR_DEFAULT_INTERESTS}
+
+Write a companion read for someone who is deciding whether to read the piece, or who has just read it. Use web search for context and for what others have said about it.
+Return ONLY one JSON object, with no markdown fences and no other text, in this shape:
+{"access": "full" or "blocked", "page_date": "the publication date shown on the page as YYYY-MM-DD, or null", "companion_html": "..."}
+- Set access to "blocked" if you could not read the whole article without a paywall, login or registration. Then leave companion_html empty.
+- companion_html: 500 to 700 words in ${S.language}, as HTML using only <h3>, <p>, <strong>, <em>, <ul>, <li> and <blockquote>. Use three <h3> sections, titled for the content: the key ideas in the order the author builds them, the context (what came before and what others in the field think), and the strongest criticisms, including ones the author does not address. Do not count words and do not add notes.
+- Put everything in your own words. Never reproduce passages. At most two quotes, each under fifteen words, clearly attributed.
+- Separate what the author claims from what is established. Do not invent quotes, statistics or details that are not in the article or your sources. If you could not read a part, say so.`;
+}
+function lrObj(text) {
+  const t = String(text).replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/, "");
+  const a = t.indexOf("{"), b = t.lastIndexOf("}");
+  const bad = msg => { const e = new Error(msg); e.parse = true; return e; };
+  if (a < 0 || b <= a) throw bad("The model did not return a usable answer.");
+  try { return JSON.parse(t.slice(a, b + 1)); } catch (e) { throw bad("The model's answer could not be read."); }
+}
+const lrCall = (prompt, urlContext) => S.provider === "gemini" ? callGemini(prompt, urlContext) : callOpenAI(prompt);
+function lrCheck(a, excluded) {
+  if (!a.title || !/^https?:\/\//i.test(a.url || "")) return "no direct link";
+  if (excluded.some(u => normUrl(u) === normUrl(a.url))) return "already recommended";
+  if (!inWindow(a.published)) return "published " + (a.published || "on an unknown date") + ", outside the last " + LR_DAYS + " days";
+  if (a.free_access !== true) return "free access not confirmed";
+  return "";
+}
+
+let lrBusy = false, lrRun = 0, lrT0 = 0, lrTick = null, lrBase = "";
+function lrStatus(msg) {
+  lrBase = msg;
+  const s = $("lrStatusText");
+  if (s) s.textContent = msg + (lrT0 ? " " + Math.round((Date.now() - lrT0) / 1000) + "s" : "");
+}
+function lrShowSkeleton(msg) {
+  $("lrOut").innerHTML = '<p class="status"><span class="dot"></span><span id="lrStatusText"></span></p><div class="skelcard"><div class="skel" style="aspect-ratio:16/9;border-radius:0"></div><div style="padding:22px"><div class="skel" style="height:14px;width:30%;margin-bottom:14px"></div><div class="skel" style="height:26px;width:88%;margin-bottom:10px"></div><div class="skel" style="height:16px;width:96%;margin-bottom:8px"></div><div class="skel" style="height:16px;width:70%"></div></div></div>';
+  lrStatus(msg);
+}
+function lrNotice(title, text, btnText, fn, isErr) {
+  const out = $("lrOut");
+  out.innerHTML = "";
+  const n = document.createElement("div");
+  n.className = "notice";
+  n.innerHTML = "<h3></h3><p></p>";
+  n.querySelector("h3").textContent = title;
+  if (isErr) n.querySelector("h3").classList.add("err");
+  n.querySelector("p").textContent = text;
+  if (btnText) { const b = document.createElement("button"); b.textContent = btnText; b.onclick = fn; n.appendChild(b); }
+  out.appendChild(n);
+}
+function setLrBusy(b) { lrBusy = b; $("lrGoBtn").disabled = b; $("lrGoBtn").textContent = b ? "Working..." : "Find my long read"; }
+function renderLrRunInfo() { $("lrRunInfo").textContent = (S.provider === "gemini" ? "Gemini" : "OpenAI") + ", " + S.models[S.provider] + ", one article."; }
+function renderLrSeenNote() {
+  const n = lsGet("lrseen", []).length;
+  $("lrSeenNote").textContent = n ? n + " long reads recommended so far. They are never repeated." : "No long reads recommended yet.";
+}
+
+async function generateLongRead() {
+  if (lrBusy) return;
+  readFormIfOpen();
+  if (!KEYS[S.provider]) {
+    lrNotice("Add your " + (S.provider === "gemini" ? "Gemini" : "OpenAI") + " key", "The long read needs an API key to search and read articles. It stays on this device.", "Open settings", () => showView("settings"));
+    return;
+  }
+  const myRun = ++lrRun;
+  setLrBusy(true);
+  lrT0 = Date.now();
+  lrShowSkeleton("Searching for an article (try 1 of 3)");
+  clearInterval(lrTick);
+  lrTick = setInterval(() => lrStatus(lrBase), 1000);
+  const rejected = [], reasons = [];
+  try {
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      const seen = lsGet("lrseen", []);
+      const excluded = seen.map(x => x.url).concat(rejected);
+      lrStatus("Searching for an article (try " + attempt + " of 3)");
+      let a;
+      try { a = lrObj((await lrCall(lrFindPrompt(excluded), false)).text); }
+      catch (e) { if (!e.parse) throw e; reasons.push("the search returned no usable answer"); continue; }
+      const bad = lrCheck(a, excluded);
+      if (bad) { if (a.url) rejected.push(a.url); reasons.push((a.title || "An article") + ": " + bad); continue; }
+      lrStatus("Reading “" + a.title + "” and writing the companion (try " + attempt + " of 3)");
+      let r, o;
+      try { r = await lrCall(lrReadPrompt(a), true); o = lrObj(r.text); }
+      catch (e) { if (!e.parse) throw e; rejected.push(a.url); reasons.push(a.title + ": the page could not be processed"); continue; }
+      const access = String(o.access || "").toLowerCase();
+      const companion = String(o.companion_html || "");
+      const mine = (r.urls || []).find(u => normUrl(u.url) === normUrl(a.url));
+      let fail = "";
+      if (access === "blocked") fail = "the page could not be read in full (paywall or login)";
+      else if (mine && !/SUCCESS/i.test(mine.status)) fail = "the page could not be retrieved (" + mine.status.replace(/^URL_RETRIEVAL_STATUS_/, "").toLowerCase() + ")";
+      else if (isoOk(o.page_date) && !inWindow(o.page_date)) fail = "the page shows the date " + o.page_date + ", outside the last " + LR_DAYS + " days";
+      else if (access !== "full") fail = "the page could not be read in full";
+      else if (companion.replace(/<[^>]*>/g, " ").trim().split(/\s+/).length < 250) fail = "the companion read came back too short";
+      if (fail) { rejected.push(a.url); reasons.push(a.title + ": " + fail); continue; }
+      const h = hostOf(a.url);
+      const inSearch = (r.cites || []).concat([]).some(c => c.host && (h === c.host || h.endsWith("." + c.host) || c.host.endsWith("." + h)));
+      const rec = {
+        id: Date.now(), t: Date.now(), provider: S.provider, model: S.models[S.provider],
+        title: String(a.title).trim(), author: String(a.author || "").trim(), publisher: String(a.publisher || h).trim(), url: a.url,
+        published: isoOk(o.page_date) ? o.page_date.slice(0, 10) : a.published.slice(0, 10), dateOnPage: isoOk(o.page_date),
+        minutes: Math.max(5, Math.min(40, parseInt(a.reading_minutes, 10) || 12)), why: String(a.why || "").trim(),
+        companion, readByTool: !!mine, linkInSearch: inSearch, image: null
+      };
+      if (lrRun !== myRun) return;
+      lsSet("lrseen", seen.concat([{ url: a.url, title: rec.title, t: rec.t }]).slice(-150));
+      renderLrSeenNote();
+      renderLongRead(rec);
+      saveLongRead(rec);
+      setLrBusy(false);
+      clearInterval(lrTick); lrT0 = 0;
+      if (S.images) {
+        pageImage(a.url).then(async img => {
+          if (img && await canLoad(img) && lrRun === myRun) { rec.image = img; renderLongRead(rec); saveLongRead(rec); }
+        });
+      }
+      return;
+    }
+    if (lrRun === myRun) lrNotice("No article passed the checks", "Three candidates were tried and none was accepted. " + reasons.join(" | "), "Try again", generateLongRead, true);
+  } catch (e) {
+    if (lrRun === myRun) lrNotice("That did not work", e.message || String(e), "Try again", generateLongRead, true);
+  } finally { clearInterval(lrTick); lrT0 = 0; if (lrRun === myRun) setLrBusy(false); }
+}
+$("lrGoBtn").onclick = generateLongRead;
+
+function renderLongRead(rec) {
+  const out = $("lrOut");
+  out.innerHTML = "";
+  const meta = document.createElement("div");
+  meta.className = "meta-line";
+  const info = document.createElement("span");
+  info.textContent = "Found " + new Date(rec.t).toLocaleString(undefined, { weekday: "short", hour: "2-digit", minute: "2-digit" });
+  const share = document.createElement("button");
+  share.textContent = "Share";
+  share.onclick = () => {
+    const text = rec.title + "\n" + rec.url;
+    if (navigator.share) navigator.share({ title: rec.title, text }).catch(() => {});
+    else if (navigator.clipboard) navigator.clipboard.writeText(text).then(() => toast("Copied to the clipboard"));
+  };
+  const again = document.createElement("button");
+  again.textContent = "Find another";
+  again.onclick = () => generateLongRead();
+  meta.append(info, share, again);
+  out.appendChild(meta);
+
+  const card = document.createElement("article");
+  card.className = "card hero";
+  if (S.images && rec.image) {
+    const fig = document.createElement("figure");
+    fig.className = "shot";
+    fig.appendChild(imgEl(rec.image, true));
+    card.appendChild(fig);
+  }
+  const body = document.createElement("div");
+  body.className = "body";
+  const m = document.createElement("div");
+  m.className = "meta";
+  const tag = document.createElement("span");
+  tag.className = "tag"; tag.textContent = "Long read";
+  tag.style.setProperty("--c", "#4F46E5"); tag.style.setProperty("--cbg", tint("#4F46E5", 0.13));
+  const mins = document.createElement("span");
+  mins.className = "cert"; mins.textContent = "About " + rec.minutes + " min read";
+  m.append(tag, mins);
+  const h = document.createElement("h2");
+  h.textContent = rec.title;
+  const by = document.createElement("p");
+  by.className = "byline";
+  by.textContent = [rec.author, rec.publisher].filter(Boolean).join(", ") + " · " + fmtDate(rec.published);
+  const link = document.createElement("a");
+  link.className = "lrlink"; link.href = rec.url; link.target = "_blank"; link.rel = "noopener noreferrer";
+  link.textContent = "Read the article ↗";
+  const why = document.createElement("div");
+  why.className = "prose";
+  why.appendChild(sanitize(rec.why));
+  const checks = document.createElement("ul");
+  checks.className = "checks";
+  const add = (ok, text) => { const li = document.createElement("li"); if (!ok) li.className = "warn"; const i = document.createElement("i"); li.append(i, document.createTextNode(text)); checks.appendChild(li); };
+  add(rec.dateOnPage, rec.dateOnPage ? "Published " + fmtDate(rec.published) + ", confirmed on the page itself." : "Published " + fmtDate(rec.published) + ", as reported by the search. The page date was not confirmed.");
+  add(rec.readByTool, rec.readByTool ? "Free to read: the page was opened in full without a paywall or login." : "Free to read: the model says it read the whole page, but this could not be checked here. If you hit a paywall, tap Find another.");
+  if (!rec.linkInSearch) add(false, "The link did not appear in the search results, so open it with care.");
+  body.append(m, h, by, link, why, checks);
+  card.appendChild(body);
+  out.appendChild(card);
+
+  const c2 = document.createElement("article");
+  c2.className = "card";
+  const b2 = document.createElement("div");
+  b2.className = "body companion";
+  const lab = document.createElement("p");
+  lab.className = "lab"; lab.textContent = "Companion read";
+  const pr = document.createElement("div");
+  pr.className = "prose";
+  pr.appendChild(sanitize(rec.companion));
+  const note = document.createElement("p");
+  note.className = "hint"; note.style.cssText = "margin:16px 0 0;color:var(--muted);font-size:14px";
+  note.textContent = "Written by " + rec.model + " in its own words from the article and other sources. It is not the article. Read the original for the author's full argument.";
+  b2.append(lab, pr, note);
+  c2.appendChild(b2);
+  out.appendChild(c2);
+}
+function saveLongRead(rec) {
+  const list = lsGet("lrhist", []).filter(x => x.id !== rec.id);
+  list.unshift(rec);
+  lsSet("lrhist", list.slice(0, 30));
+}
+function renderLrHistory() {
+  const box = $("lrHistList"), list = lsGet("lrhist", []);
+  box.innerHTML = "";
+  if (!list.length) { box.innerHTML = '<p class="hint" style="margin:0">Nothing yet. Your long reads will appear here.</p>'; return; }
+  list.forEach(rec => {
+    const row = document.createElement("div");
+    row.className = "hist";
+    const t = document.createElement("div");
+    t.className = "t";
+    const d = document.createElement("b");
+    d.textContent = rec.title;
+    const sm = document.createElement("small");
+    sm.textContent = rec.publisher + ", " + fmtDate(rec.published);
+    t.append(d, sm);
+    const btns = document.createElement("div");
+    btns.className = "b";
+    const open = document.createElement("button");
+    open.className = "open"; open.textContent = "Open";
+    open.onclick = () => { renderLongRead(rec); showView("longread"); };
+    const del = document.createElement("button");
+    del.textContent = "Delete";
+    del.onclick = () => { lsSet("lrhist", lsGet("lrhist", []).filter(x => x.id !== rec.id)); renderLrHistory(); };
+    btns.append(open, del);
+    row.append(t, btns);
+    box.appendChild(row);
+  });
+}
+$("lrReset").onclick = () => { $("lrInterests").value = LR_DEFAULT_INTERESTS; readForm(); persist("Interests reset"); };
+$("lrClearSeen").onclick = () => { if (confirm("Forget which long reads were recommended? They could be recommended again.")) { lsSet("lrseen", []); renderLrSeenNote(); } };
+
 // ---------------- Version and updates ----------------
 $("ver").textContent = "v" + APP_VERSION;
 $("verLine").textContent = "Daily Digest, version " + APP_VERSION + " (" + APP_DATE + ")";
@@ -1058,8 +1374,10 @@ $("verBtn").onclick = async () => {
 if (location.protocol.startsWith("http")) remoteVersion().then(v => { if (newer(v, APP_VERSION)) showUpdate(v); }).catch(() => {});
 
 // ---------------- Start ----------------
-loadForm(); renderTopics(); syncProvider();
+loadForm(); renderTopics(); syncProvider(); renderLrSeenNote(); renderLrRunInfo();
 (function showLast() {
+  const lh = lsGet("lrhist", []);
+  if (lh.length) renderLongRead(lh[0]); else lrNotice("Your long read", "Tap Find my long read. It searches for one exceptional article from the last 14 days, checks that it is free to read, and writes a companion read for it.", "", null);
   const h = lsGet("history", []);
   if (h.length) renderBrief(h[0]);
   else showNotice("Welcome", "Choose your topics above, add an API key in Settings, then tap Get my briefing. Your digest arrives as a handful of stories with pictures and sources.", KEYS[S.provider] ? "" : "Open settings", () => showView("settings"));
