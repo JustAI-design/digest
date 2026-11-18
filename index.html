@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#12151C">
-<meta name="app-version" content="1.7">
+<meta name="app-version" content="1.8">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Digest">
@@ -290,6 +290,17 @@
     </div>
 
     <div class="group">
+      <h3>Sync across devices</h3>
+      <p class="hint">Keeps your briefings, long reads, Reading list and settings the same on every device, through a private GitHub repository only you can open. Create an empty private repository (tick Add a README), then a fine-grained token limited to it with Contents set to read and write. Enter the same details on each device. Your API keys are not synced.</p>
+      <div class="field"><label for="syOwner">GitHub username</label><input type="text" id="syOwner" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
+      <div class="field"><label for="syRepo">Private repository name</label><input type="text" id="syRepo" placeholder="my-sync" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
+      <div class="field"><label for="syToken">GitHub token</label><input type="password" id="syToken" placeholder="github_pat_..." autocomplete="off" autocapitalize="off" spellcheck="false"></div>
+      <label class="check" style="display:flex;gap:10px;align-items:center;margin:6px 0"><input type="checkbox" id="syAuto"> Sync automatically</label>
+      <div class="actions"><button class="btn alt" id="syBtn">Sync now</button></div>
+      <p class="hint" style="margin:10px 0 0" id="syMsg"></p>
+    </div>
+
+    <div class="group">
       <h3>Save and move</h3>
       <p class="hint">Settings save automatically on this device. Export a copy to move them to another device.</p>
       <label class="check"><input type="checkbox" id="exportKeys"> Include API keys in the export</label>
@@ -312,7 +323,7 @@
 <div class="toast" id="toast" role="status"></div>
 
 <script>
-const APP_VERSION = "1.7", APP_DATE = "18 Nov 2026";
+const APP_VERSION = "1.8", APP_DATE = "18 Nov 2026";
 const $ = id => document.getElementById(id);
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const lsGet = (k, d) => { try { const v = localStorage.getItem("dd_" + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } };
@@ -371,6 +382,7 @@ function persist(toastMsg) {
   lsSet("settings", S);
   if (S.remember) lsSet("keys", KEYS); else { try { localStorage.removeItem("dd_keys"); } catch (e) {} }
   if (toastMsg) toast(toastMsg);
+  if (typeof sySoon === "function") sySoon();
 }
 let toastTimer;
 function toast(msg) {
@@ -1047,8 +1059,11 @@ function readFormIfOpen() { if (!$("view-settings").classList.contains("hidden")
 function saveBrief(brief) {
   const list = lsGet("history", []).filter(b => b.id !== brief.id);
   const slim = JSON.parse(JSON.stringify(brief)); delete slim.streaming; slim.items.forEach(i => { delete i.imgPending; delete i.imgStarted; });
+  slim.mod = Date.now();
   list.unshift(slim);
+  list.slice(20).forEach(b => syTomb("H", b.id));
   lsSet("history", list.slice(0, 20));
+  sySoon();
 }
 function renderHistory() {
   const box = $("histList"), list = lsGet("history", []);
@@ -1072,13 +1087,13 @@ function renderHistory() {
     open.onclick = () => { renderBrief(b); showView("brief"); };
     const del = document.createElement("button");
     del.textContent = "Delete";
-    del.onclick = () => { lsSet("history", lsGet("history", []).filter(x => x.id !== b.id)); renderHistory(); };
+    del.onclick = () => { lsSet("history", lsGet("history", []).filter(x => x.id !== b.id)); syTomb("H", b.id); renderHistory(); };
     btns.append(open, del);
     row.append(t, btns);
     box.appendChild(row);
   });
 }
-$("clearHist").onclick = () => { if (confirm("Delete all past briefings?")) { lsSet("history", []); renderHistory(); } };
+$("clearHist").onclick = () => { if (confirm("Delete all past briefings?")) { lsGet("history", []).forEach(b => syTomb("H", b.id)); lsSet("history", []); renderHistory(); } };
 
 // ---------------- Long read ----------------
 const LR_DAYS = 14;
@@ -1449,8 +1464,12 @@ function saveLongRead(rec) {
   list.unshift(rec);
   // Saved items are never dropped. Only the newest 30 others are kept.
   let n = 0;
-  lsSet("lrhist", list.filter(x => x.saved || ++n <= 30));
+  rec.mod = Date.now();
+  const kept = list.filter(x => x.saved || ++n <= 30);
+  list.filter(x => !kept.includes(x)).forEach(x => syTomb("L", x.id));
+  lsSet("lrhist", kept);
   renderLrList();
+  sySoon();
 }
 function toggleSaved(rec) {
   rec.saved = !rec.saved;
@@ -1508,14 +1527,195 @@ function renderLrHistory() {
     open.onclick = () => { renderLongRead(rec); showView("longread"); };
     const del = document.createElement("button");
     del.textContent = "Delete";
-    del.onclick = () => { lsSet("lrhist", lsGet("lrhist", []).filter(x => x.id !== rec.id)); renderLrHistory(); renderLrList(); };
+    del.onclick = () => { lsSet("lrhist", lsGet("lrhist", []).filter(x => x.id !== rec.id)); syTomb("L", rec.id); renderLrHistory(); renderLrList(); };
     btns.append(open, del);
     row.append(t, btns);
     box.appendChild(row);
   });
 }
 $("lrReset").onclick = () => { $("lrInterests").value = LR_DEFAULT_INTERESTS; readForm(); persist("Interests reset"); };
-$("lrClearSeen").onclick = () => { if (confirm("Forget which long reads were recommended? They could be recommended again.")) { lsSet("lrseen", []); renderLrSeenNote(); } };
+$("lrClearSeen").onclick = () => { if (confirm("Forget which long reads were recommended? They could be recommended again.")) { lsSet("lrseen", []); lsSet("syClear", Date.now()); renderLrSeenNote(); sySoon(); } };
+
+// ---------------- Sync across devices (private GitHub repository) ----------------
+const GH_API = "https://api.github.com";
+const b64FromBytes = bytes => new Promise((res, rej) => {
+  const r = new FileReader();
+  r.onload = () => res(String(r.result).split(",")[1] || "");
+  r.onerror = () => rej(r.error);
+  r.readAsDataURL(new Blob([bytes]));
+});
+const textB64 = t => b64FromBytes(new TextEncoder().encode(t));
+async function gh(cfg, method, path, body) {
+  let res;
+  try {
+    res = await fetch(GH_API + "/repos/" + cfg.owner + "/" + cfg.repo + path, {
+      method, cache: "no-store",
+      headers: Object.assign({ Authorization: "Bearer " + cfg.token, Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" }, body ? { "Content-Type": "application/json" } : {}),
+      body: body ? JSON.stringify(body) : undefined
+    });
+  } catch (e) { throw new Error("Could not reach GitHub (" + (e.message || e) + ")."); }
+  if (res.status === 404) return { status: 404 };
+  if (!res.ok) {
+    let m = ""; try { m = (await res.json()).message || ""; } catch (e) {}
+    const hint = res.status === 401 ? " The token was rejected." : res.status === 403 ? " The token may lack Contents read and write on this repository." : "";
+    throw new Error("GitHub " + res.status + (m ? ": " + m : "") + "." + hint);
+  }
+  return { status: res.status, json: res.status === 204 ? null : await res.json() };
+}
+async function getFile(cfg, branch, path) {
+  const r = await gh(cfg, "GET", "/contents/" + encodeURI(path) + "?ref=" + encodeURIComponent(branch));
+  if (r.status === 404 || !r.json || Array.isArray(r.json)) return null;
+  let text = "";
+  if (r.json.content) { const bin = atob(r.json.content.replace(/\n/g, "")); text = new TextDecoder().decode(Uint8Array.from(bin, c => c.charCodeAt(0))); }
+  return { sha: r.json.sha, text };
+}
+async function putFile(cfg, branch, path, b64, sha, message) {
+  const body = { message, content: b64, branch };
+  if (sha) body.sha = sha;
+  const r = await gh(cfg, "PUT", "/contents/" + encodeURI(path), body);
+  return r.json && r.json.content && r.json.content.sha;
+}
+async function syRepoInfo(cfg) {
+  const r = await gh(cfg, "GET", "");
+  if (r.status === 404) throw new Error("Repository " + cfg.owner + "/" + cfg.repo + " was not found. Create it on GitHub first, and give the token access to it.");
+  return r.json;
+}
+async function syRawText(cfg, path, branch) {
+  let res;
+  try {
+    res = await fetch(GH_API + "/repos/" + cfg.owner + "/" + cfg.repo + "/contents/" + encodeURI(path) + "?ref=" + encodeURIComponent(branch), {
+      cache: "no-store", headers: { Authorization: "Bearer " + cfg.token, Accept: "application/vnd.github.raw+json", "X-GitHub-Api-Version": "2022-11-28" } });
+  } catch (e) { throw new Error("Could not reach GitHub."); }
+  if (!res.ok) throw new Error("GitHub " + res.status + " while downloading.");
+  return res.text();
+}
+async function fileSha(cfg, branch, path) {
+  const r = await gh(cfg, "GET", "/contents/" + encodeURI(path) + "?ref=" + encodeURIComponent(branch));
+  return r.status === 200 && r.json && !Array.isArray(r.json) ? r.json.sha : null;
+}
+async function removeFile(cfg, branch, path, msg) {
+  const sha = await fileSha(cfg, branch, path);
+  if (sha) await gh(cfg, "DELETE", "/contents/" + encodeURI(path), { message: msg, sha, branch });
+}
+async function syColl(cfg, branch, o) {
+  const r = await gh(cfg, "GET", "/contents/" + o.dir + "?ref=" + encodeURIComponent(branch));
+  const remote = {};
+  (r.status === 404 || !Array.isArray(r.json) ? [] : r.json).forEach(f => { if (/\.json$/.test(f.name)) remote[f.name.slice(0, -5)] = f.sha; });
+  const del = o.deleted;
+  let local = o.list(), changed = false;
+  for (const rec of local) if (del[rec.id]) { o.del(rec.id); changed = true; }
+  local = local.filter(x => !del[x.id]);
+  for (const id of Object.keys(o.tomb)) {
+    del[id] = o.tomb[id];
+    if (remote[id]) { await removeFile(cfg, branch, o.dir + "/" + id + ".json", "Delete " + id); delete remote[id]; }
+    delete o.info.sha[id]; delete o.info.pushed[id];
+  }
+  for (const id of Object.keys(remote)) {
+    if (del[id]) continue;
+    if (o.info.sha[id] === remote[id]) continue;
+    let rm = null; try { rm = JSON.parse(await syRawText(cfg, o.dir + "/" + id + ".json", branch)); } catch (e) {}
+    if (!rm || rm.id == null) continue;
+    const lc = local.find(x => String(x.id) === String(id));
+    if (!lc) { o.put(rm); changed = true; local.push(rm); o.info.pushed[id] = rm.mod || 0; }
+    else if ((rm.mod || 0) > (lc.mod || 0)) { o.put(rm); Object.assign(lc, rm); changed = true; o.info.pushed[id] = rm.mod || 0; }
+    o.info.sha[id] = remote[id];
+  }
+  for (const rec of local) {
+    const isNew = !remote[rec.id];
+    if (!isNew && !((rec.mod || 0) > (o.info.pushed[rec.id] || 0))) continue;
+    const sha = await putFile(cfg, branch, o.dir + "/" + rec.id + ".json", await textB64(JSON.stringify(rec)), remote[rec.id], "Sync " + rec.id);
+    o.info.sha[rec.id] = sha; o.info.pushed[rec.id] = rec.mod || 0; remote[rec.id] = sha;
+  }
+  return changed;
+}
+const syCfg = () => { const c = lsGet("sync", {}); return c.owner && c.repo && c.token ? c : null; };
+function syTomb(kind, id) {
+  if (!syCfg()) return;
+  const t = lsGet("syDel" + kind, {}); t[id] = Date.now(); lsSet("syDel" + kind, t);
+  sySoon();
+}
+let sySoonT = null, syBusy = false;
+function sySoon() {
+  const c = lsGet("sync", {});
+  if (!c.auto || !syCfg()) return;
+  clearTimeout(sySoonT);
+  sySoonT = setTimeout(() => syncNow(false), 4000);
+}
+function syLoadForm() {
+  const c = lsGet("sync", { auto: true });
+  $("syOwner").value = c.owner || ""; $("syRepo").value = c.repo || ""; $("syToken").value = c.token || ""; $("syAuto").checked = c.auto !== false;
+}
+function syReadForm() {
+  lsSet("sync", { owner: $("syOwner").value.trim(), repo: $("syRepo").value.trim(), token: $("syToken").value.trim(), auto: $("syAuto").checked });
+}
+function syApplySettings(remote) {
+  S = Object.assign({}, DEFAULTS, remote);
+  S.models = Object.assign({}, DEFAULTS.models, S.models || {});
+  if (!Array.isArray(S.topics) || !S.topics.length) S.topics = DEFAULT_TOPICS.map(t => ({ ...t }));
+  lsSet("settings", S);
+  loadForm(); renderTopics(); syncProvider(); renderLrRunInfo();
+}
+async function syncRun(cfg) {
+  const branch = (await syRepoInfo(cfg)).default_branch || "main";
+  const info = lsGet("syInfo", {});
+  info.h = info.h || { sha: {}, pushed: {} }; info.l = info.l || { sha: {}, pushed: {} };
+  const sf = await getFile(cfg, branch, "digest/state.json");
+  let state = {}; try { if (sf && sf.text) state = JSON.parse(sf.text); } catch (e) {}
+  state.delH = state.delH || {}; state.delL = state.delL || {};
+  let dirty = !sf;
+  readFormIfOpen();
+  const snap = JSON.stringify(S);
+  if (info.lastSnap === undefined) {
+    if (state.settings) syApplySettings(state.settings); else { state.settings = S; state.settingsAt = Date.now(); dirty = true; }
+  } else if (snap !== info.lastSnap) { state.settings = S; state.settingsAt = Date.now(); dirty = true; }
+  else if (state.settingsAt && state.settingsAt > (info.settingsAt || 0)) syApplySettings(state.settings);
+  info.settingsAt = state.settingsAt || 0;
+  const clr = lsGet("syClear", 0);
+  if (clr) { state.lrseen = []; state.seenClearedAt = clr; lsSet("syClear", 0); dirty = true; }
+  else if ((state.seenClearedAt || 0) > (info.seenClearedAt || 0)) lsSet("lrseen", []);
+  info.seenClearedAt = state.seenClearedAt || 0;
+  const seen = new Map();
+  lsGet("lrseen", []).concat(state.lrseen || []).forEach(x => seen.set(x.url, x));
+  const seenArr = [...seen.values()].sort((a, b) => a.t - b.t).slice(-150);
+  if (JSON.stringify(seenArr) !== JSON.stringify(state.lrseen || [])) { state.lrseen = seenArr; dirty = true; }
+  if (JSON.stringify(seenArr) !== JSON.stringify(lsGet("lrseen", []))) { lsSet("lrseen", seenArr); renderLrSeenNote(); }
+  const tombH = lsGet("syDelH", {}), tombL = lsGet("syDelL", {});
+  if (Object.keys(tombH).length || Object.keys(tombL).length) dirty = true;
+  const byT = (a, b) => b.t - a.t;
+  const ch = await syColl(cfg, branch, {
+    dir: "digest/hist", info: info.h, deleted: state.delH, tomb: tombH,
+    list: () => lsGet("history", []),
+    put: rm => { const l = lsGet("history", []).filter(x => x.id !== rm.id); l.push(rm); lsSet("history", l.sort(byT).slice(0, 20)); },
+    del: id => lsSet("history", lsGet("history", []).filter(x => String(x.id) !== String(id)))
+  });
+  const cl = await syColl(cfg, branch, {
+    dir: "digest/lr", info: info.l, deleted: state.delL, tomb: tombL,
+    list: () => lsGet("lrhist", []),
+    put: rm => { const l = lsGet("lrhist", []).filter(x => x.id !== rm.id); l.push(rm); lsSet("lrhist", l.sort(byT)); },
+    del: id => lsSet("lrhist", lsGet("lrhist", []).filter(x => String(x.id) !== String(id)))
+  });
+  lsSet("syDelH", {}); lsSet("syDelL", {});
+  if (dirty) await putFile(cfg, branch, "digest/state.json", await textB64(JSON.stringify(state)), sf && sf.sha, "Sync state");
+  info.lastSnap = JSON.stringify(S);
+  lsSet("syInfo", info);
+  if (ch || cl) { renderHistory(); renderLrHistory(); renderLrList(); }
+}
+async function syncNow(manual) {
+  if (syBusy) return;
+  const cfg = syCfg();
+  if (!cfg) { if (manual) $("syMsg").textContent = "Fill in the repository name and the token first."; return; }
+  syBusy = true; $("syBtn").disabled = true; $("syMsg").textContent = "Syncing...";
+  try {
+    try { await syncRun(cfg); }
+    catch (e) { if (/GitHub (409|422)/.test(e.message)) await syncRun(cfg); else throw e; }
+    $("syMsg").textContent = "Synced at " + new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) + ".";
+  } catch (e) { $("syMsg").textContent = "Sync failed: " + (e.message || e); }
+  finally { syBusy = false; $("syBtn").disabled = false; }
+}
+$("syBtn").onclick = () => { syReadForm(); syncNow(true); };
+["syOwner", "syRepo", "syToken", "syAuto"].forEach(id => $(id).addEventListener("change", () => { syReadForm(); sySoon(); }));
+document.addEventListener("visibilitychange", () => { if (!document.hidden) sySoon(); });
+syLoadForm();
 
 // ---------------- Version and updates ----------------
 $("ver").textContent = "v" + APP_VERSION;
@@ -1548,6 +1748,7 @@ if (location.protocol.startsWith("http")) remoteVersion().then(v => { if (newer(
 
 // ---------------- Start ----------------
 loadForm(); renderTopics(); syncProvider(); renderLrSeenNote(); renderLrRunInfo(); renderLrList();
+if (syCfg()) setTimeout(() => syncNow(false), 1500);
 (function showLast() {
   const lh = lsGet("lrhist", []);
   if (lh.length) renderLongRead(lh[0]); else lrNotice("Your long read", "Tap Find my long read. It searches for one exceptional article from the last 14 days, checks that it is free to read, and writes a companion read for it.", "", null);
