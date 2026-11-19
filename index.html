@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#12151C">
-<meta name="app-version" content="1.8">
+<meta name="app-version" content="1.9">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Digest">
@@ -323,7 +323,7 @@
 <div class="toast" id="toast" role="status"></div>
 
 <script>
-const APP_VERSION = "1.8", APP_DATE = "18 Nov 2026";
+const APP_VERSION = "1.9", APP_DATE = "19 Nov 2026";
 const $ = id => document.getElementById(id);
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const lsGet = (k, d) => { try { const v = localStorage.getItem("dd_" + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } };
@@ -487,7 +487,7 @@ $("exportBtn").onclick = async () => {
   if ($("exportKeys").checked) data.keys = KEYS;
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
   const name = "daily-digest-settings.json", file = new File([blob], name, { type: "application/json" });
-  try { if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: name }); return; } }
+  try { if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file] }); return; } }
   catch (e) { if (e && e.name === "AbortError") return; }
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove();
@@ -1369,7 +1369,7 @@ async function downloadEpub(rec) {
     const slug = rec.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 60) || "long-read";
     const name = slug + ".epub", file = new File([blob], name, { type: "application/epub+zip" });
     try {
-      if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: rec.title }); return; }
+      if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file] }); return; }
     } catch (e) { if (e && e.name === "AbortError") return; }
     const url = URL.createObjectURL(blob), a = document.createElement("a");
     a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
